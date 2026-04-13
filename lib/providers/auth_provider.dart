@@ -58,6 +58,9 @@ import '../utils/constants.dart';
 // SupabaseService — our backend wrapper; every Supabase call goes through it.
 import '../services/supabase_service.dart';
 
+// LevelUnlockService — reset local level-progress cache on logout/new-user.
+import '../services/level_unlock_service.dart';
+
 /// AuthProvider — Central authentication state manager.
 ///
 /// Widgets listen to this provider to know if the user is logged in,
@@ -453,6 +456,10 @@ class AuthProvider with ChangeNotifier {
       // Invalidate the Supabase JWT token on the server.
       await SupabaseService.signOut();
 
+      // Hard Reset: clear local level-progress cache so the next account
+      // that logs in on this device always starts from Level 1.
+      await LevelUnlockService.instance.resetProgress();
+
       // Clear the persisted login data from the device's local storage.
       final prefs = await SharedPreferences.getInstance();
       await prefs.remove(AppConstants.keyUsername);
@@ -520,7 +527,16 @@ class AuthProvider with ChangeNotifier {
   /// all listening widgets that the state has changed.
   ///
   /// Called by every successful auth operation: signUp, verifySignupOtp, login.
+  ///
+  /// ACCOUNT ISOLATION: resetProgress() clears the local SharedPreferences
+  /// level-unlock cache. On first load, LevelUnlockService.loadHighestUnlocked()
+  /// will then query Supabase for THIS user's real progress — guaranteeing that
+  /// no data bleeds over from a previously logged-in tester account.
   Future<void> _handleLoginSuccess(User user, String username) async {
+    // Clear the local level-unlock cache so this user's Supabase row is
+    // authoritative (prevents inheriting progress from the previous session).
+    await LevelUnlockService.instance.resetProgress();
+
     final prefs = await SharedPreferences.getInstance();
     _username   = username;
     _isLoggedIn = true;

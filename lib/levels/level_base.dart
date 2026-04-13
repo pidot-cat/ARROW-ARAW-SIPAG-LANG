@@ -115,6 +115,11 @@ mixin BentLevelStateMixin<T extends StatefulWidget> on State<T> {
   Widget Function() get nextLevelBuilder;
 
   late List<BentArrowData> arrows;
+
+  /// Real-time counter of arrows still on the board. Updated on every
+  /// successful exit so the HUD reflects the exact remaining count.
+  late ValueNotifier<int> arrowsRemaining;
+
   int lives = 3;
   int secondsLeft = 60;
   bool gameOver = false;
@@ -150,6 +155,7 @@ mixin BentLevelStateMixin<T extends StatefulWidget> on State<T> {
     _lastTapPerArrow.clear();
     _audio.resetWinSoundGuard();
     arrows = buildArrowsFn();
+    arrowsRemaining = ValueNotifier(arrows.length);
     for (final a in arrows) {
       animTrigger[a.id] = ValueNotifier(0);
     }
@@ -161,6 +167,7 @@ mixin BentLevelStateMixin<T extends StatefulWidget> on State<T> {
   void dispose() {
     _levelTimer?.cancel();
     _audio.cancelIdleTimer();
+    arrowsRemaining.dispose();
     for (final v in animTrigger.values) {
       v.dispose();
     }
@@ -304,6 +311,7 @@ mixin BentLevelStateMixin<T extends StatefulWidget> on State<T> {
     Future.delayed(_solveDelay, () {
       if (!mounted) return;
       _pendingSolve.remove(arrow.id);
+      arrowsRemaining.value = arrows.where((a) => !a.solved).length;
       setState(() {
         if (arrows.every((a) => a.solved)) triggerVictory();
       });
@@ -327,6 +335,7 @@ mixin BentLevelStateMixin<T extends StatefulWidget> on State<T> {
     Future.delayed(_solveDelay, () {
       if (!mounted) return;
       _pendingSolve.remove(arrow.id);
+      arrowsRemaining.value = arrows.where((a) => !a.solved).length;
       setState(() {
         if (arrows.every((a) => a.solved)) triggerVictory();
       });
@@ -351,6 +360,7 @@ mixin BentLevelStateMixin<T extends StatefulWidget> on State<T> {
     _audio.resetWinSoundGuard();
     setState(() {
       arrows = buildArrowsFn();
+      arrowsRemaining.value = arrows.length;
       lives = 3;
       secondsLeft = 60;
       gameOver = false;
@@ -463,6 +473,21 @@ mixin BentLevelStateMixin<T extends StatefulWidget> on State<T> {
             minHeight: 5,
             backgroundColor: Colors.white12,
             valueColor: AlwaysStoppedAnimation<Color>(timerColor),
+          ),
+        ),
+        const SizedBox(height: 6),
+        // Dynamic arrow counter — updates reactively as each arrow exits.
+        ValueListenableBuilder<int>(
+          valueListenable: arrowsRemaining,
+          builder: (_, count, __) => Text(
+            '$count ${count == 1 ? "Arrow" : "Arrows"} Remaining',
+            style: const TextStyle(
+              color: Colors.cyanAccent,
+              fontSize: 13,
+              fontWeight: FontWeight.w600,
+              letterSpacing: 1.0,
+              shadows: [Shadow(color: Colors.cyanAccent, blurRadius: 6)],
+            ),
           ),
         ),
       ]),

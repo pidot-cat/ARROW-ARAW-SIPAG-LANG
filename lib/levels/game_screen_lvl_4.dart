@@ -52,9 +52,6 @@ class _State extends State<GameScreenLvl4> with BentLevelStateMixin<GameScreenLv
         SafeArea(child: Column(children: [
           buildHUD(),
           const SizedBox(height: 4),
-          Text('Solid Square · $rows×$cols · ${40} Arrows',
-              style: TextStyle(color: Colors.white.withValues(alpha: 0.45), fontSize: 12, letterSpacing: 1.1)),
-          const SizedBox(height: 8),
           Expanded(child: Center(child: buildGrid(cellSize, shape))),
         ])),
         if (gameOver) GameOverOverlay(onRetry: restart, onBack: quit),

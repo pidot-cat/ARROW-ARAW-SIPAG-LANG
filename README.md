@@ -1,6 +1,8 @@
-<<<<<<< HEAD
 # 🏹 Arrow Araw: Sipag Lang
+
 A vibrant arrow puzzle escape mobile game built with Flutter.
+
+---
 
 ## ✨ Features
 
@@ -33,7 +35,7 @@ A vibrant arrow puzzle escape mobile game built with Flutter.
 #### ⚙️ Other Screens
 
 - **Settings Screen** — Audio toggles (Music / Sound FX), account management, support navigation.
-- **Records Screen** — Real-time statistics (Wins/Losses/Matches/Win Rate/Days Active) synced from the cloud. Compact 60dp max-height rows.
+- **Records Screen** — Real-time statistics (Wins/Losses/Matches/Win Rate/Days Active) synced from the cloud.
 - **About Screen** — Development mission and version info (v1.0.0).
 - **Contact Screen** — Support channel → sends email to arrowarawsipaglang@gmail.com via EmailJS.
 - **Privacy Policy Screen** — Data protection and Supabase storage terms.
@@ -49,7 +51,16 @@ A vibrant arrow puzzle escape mobile game built with Flutter.
 - **Solve Order** — Any arrow whose escape path is clear may be tapped. Tapping an arrow with a blocked path costs a life.
 - **Lives System** — 3 lives per level. Wrong taps deduct 1 life each. Timer expiry ends the game immediately.
 - **60-Second Timer** — Complete every level within 60 seconds. The HUD shows a linear depleting progress bar that turns red when ≤ 10 seconds remain.
-- **HUD Layout** — `[Back ←] [Level N] · · · [♥♥♥] [Xs] [⚙]` followed by a colour-coded progress bar.
+
+### 🔢 Real-Time Arrow Counter (v1.3.0)
+
+The HUD now shows a live **Arrows Remaining** counter directly below the progress bar.
+
+- Backed by a `ValueNotifier<int>` (`arrowsRemaining`) in `BentLevelStateMixin`.
+- Initialized to the total arrow count when a level starts or restarts.
+- Decremented exactly once per arrow, inside the `Future.delayed(_solveDelay)` callback — fires the instant the exit animation completes.
+- Uses `ValueListenableBuilder` so only the counter text rebuilds on each update, keeping the grid's `RepaintBoundary` completely isolated.
+- Displays `"1 Arrow Remaining"` (singular) or `"N Arrows Remaining"` (plural).
 
 ### 🔒 Level Locking & Progression
 
@@ -58,6 +69,44 @@ A vibrant arrow puzzle escape mobile game built with Flutter.
 - Clearing a level triggers an **unlock animation** for the next level.
 - Clearing **all 10 levels** permanently unlocks free selection across all levels (**Master Unlock** via `LevelUnlockService.instance.unlockAll()`).
 - Progress is dual-stored: SharedPreferences (local/instant) + Supabase `level_progress` table (remote/cross-device).
+
+---
+
+## 🔐 Authentication Flow & Account Isolation (v1.3.0)
+
+### Sign Up
+
+1. Fill in Username, Password, Confirm Password, and Email.
+2. Tap **Send** to receive a 6-digit OTP code via email.
+3. Enter the code and tap **Sign Up** to create your account.
+4. New accounts start at **Level 1** with zero stats.
+
+### Login
+
+On every successful login, `AuthProvider._handleLoginSuccess()` calls
+`LevelUnlockService.instance.resetProgress()` before writing to SharedPreferences.
+This clears the local level-unlock cache so LevelUnlockService subsequently fetches
+the authenticated user's real Supabase row — preventing any prior tester account's
+locally cached progress from bleeding into the new session.
+
+### Logout (Hard Reset)
+
+`AuthProvider.logout()` calls `LevelUnlockService.instance.resetProgress()` before
+clearing SharedPreferences. This ensures the next user to log in on the same device
+always starts from a clean local state, regardless of how far the previous session progressed.
+
+### Forgot Password
+
+1. **Step 1** — Enter your registered email address.
+2. **Step 2** — Enter the 6-digit OTP code sent to your email.
+3. **Step 3** — Set and confirm your new password.
+4. Redirects back to Login upon success.
+
+### Account Deletion (Hard Delete)
+
+- Permanently removes the user from **Supabase Auth** (via `delete_user` RPC) AND all public tables (`game_stats`, `level_progress`, `records`, `history`).
+- Local SharedPreferences are wiped.
+- Re-registering with the same email **starts as a completely fresh user** (Level 1, zero stats).
 
 ---
 
@@ -72,38 +121,15 @@ A vibrant arrow puzzle escape mobile game built with Flutter.
 | Win sound | Level victory |
 | Lose sound | Game over (lives = 0 **only**) |
 
-**Idle Resume** — `AudioService.startIdleResumeTimer()` resumes game music 2 seconds after the last tap (preventing music stopping mid-play).
+**Idle Resume** — `AudioService.startIdleResumeTimer()` resumes game music 2 seconds after the last tap.
 
-**Settings Modal** (in Settings Screen) provides functional toggles for:
-- 🎵 **Background Music** — pause/resume `Lobby-Music` & `Ingame-Music`
-- 🔊 **Sound FX** — mute/unmute all SFX (Arrow, Wrong Move, Win, Lose)
-
----
-
-## 🔐 Authentication Flow
-
-### Sign Up
-1. Fill in Username, Password, Confirm Password, and Email.
-2. Tap **Send** to receive a 6-digit OTP code via email.
-3. Enter the code and tap **Sign Up** to create your account.
-4. New accounts start at **Level 1** with zero stats.
-
-### Forgot Password
-1. **Step 1** — Enter your registered email address.
-2. **Step 2** — Enter the 6-digit OTP code sent to your email.
-3. **Step 3** — Set and confirm your new password.
-4. Redirects back to Login upon success.
-
-### Account Deletion (Hard Delete)
-- Permanently removes the user from **Supabase Auth** (via `delete_user` RPC) AND all public tables (`game_stats`, `level_progress`, `records`, `history`).
-- Local SharedPreferences are wiped.
-- Re-registering with the same email **starts as a completely fresh user** (Level 1, zero stats).
+**Settings Modal** provides functional toggles for:
+- 🎵 **Background Music** — pause/resume lobby & in-game music
+- 🔊 **Sound FX** — mute/unmute all SFX
 
 ---
 
 ## 📊 Records Screen
-
-Displays accurate stats synced from Supabase:
 
 | Stat | Description |
 |---|---|
@@ -113,8 +139,6 @@ Displays accurate stats synced from Supabase:
 | Win Rate % | `(Wins / Matches) × 100` |
 | Days Active | Calendar days the app has been used |
 
-All stat rows are compact (**max-height: 60dp**) with reduced padding for a professional look.
-
 ---
 
 ## 📂 Project Structure
@@ -122,8 +146,8 @@ All stat rows are compact (**max-height: 60dp**) with reduced padding for a prof
 ```text
 lib/
 ├── levels/
-│   ├── level_base.dart          
-│   ├── level_manager.dart       
+│   ├── level_base.dart          # Core engine + BentLevelStateMixin
+│   ├── level_manager.dart       # Arrow generation algorithm
 │   ├── game_screen_lvl_1.dart
 │   ├── game_screen_lvl_2.dart
 │   ├── game_screen_lvl_3.dart
@@ -138,7 +162,7 @@ lib/
 │   ├── arrow_model.dart
 │   └── game_stats_model.dart
 ├── providers/
-│   ├── auth_provider.dart
+│   ├── auth_provider.dart       # Auth state + account isolation
 │   └── game_provider.dart
 ├── screens/
 │   ├── about_screen.dart
@@ -156,7 +180,7 @@ lib/
 │   └── terms_screen.dart
 ├── services/
 │   ├── audio_service.dart
-│   ├── level_unlock_service.dart
+│   ├── level_unlock_service.dart  # Dual-storage progress + reset
 │   └── supabase_service.dart
 ├── utils/
 │   ├── app_colors.dart
@@ -169,18 +193,6 @@ lib/
 │   ├── life_indicator.dart
 │   └── victory_overlay.dart
 └── main.dart
-
-assets/
-├── images/
-│   ├── LOGO.png
-│   ├── background.png
-│   ├── Game Over.png
-│   ├── Victory.png
-│   ├── heart icon Red.png
-│   └── heart icon Black.png
-└── audio/
-    ├── Lobby-Music.mp3
-    └── Ingame-Music.mp3
 ```
 
 ---
@@ -188,41 +200,34 @@ assets/
 ## 🏗️ Architecture & Logic
 
 ### Arrow Data Models
+
 - **`BentCell`** — A single grid cell `(row, col)`.
 - **`BentArrowData`** — Multi-segment arrow. Holds an ordered list of `BentCell` positions, an `escape` direction, a colour, and a `solved` flag. Exposes `hitRect(cellSize)` for tap detection with an extended hit zone in the escape direction.
-- **`BentArrowPainter`** — Type alias for `StraightArrowPainter` (kept for backward compatibility).
 
 ### Core Engine (`BentLevelStateMixin`)
-Mixed into every level screen. Responsibilities:
+
+Mixed into every level screen. Key responsibilities:
+
 - **Timer** — 60-second countdown via `Timer.periodic`; calls `triggerGameOver()` at zero.
+- **Arrow Counter** — `ValueNotifier<int> arrowsRemaining` initialized to `arrows.length`. Decremented in the post-solve callback. Drives the HUD counter via `ValueListenableBuilder`.
 - **Tap handling** — `onGridTap` / `onTap` → `_findTappedArrow` → `isPathClear` → animate or `wrongTap`.
-- **Debouncing** — `_pendingSolve` (a `Set<int>`) prevents re-tapping an arrow already in its 380 ms slide-out animation.
+- **Debouncing** — Per-arrow `_lastTapPerArrow` map prevents ghost taps within a single frame. `_pendingSolve` set blocks re-tapping an arrow already animating out.
 - **Victory / Game Over** — `triggerVictory()` records the result via `GameProvider` and calls `LevelUnlockService`; `triggerGameOver()` records a loss.
-- **Navigation** — Back button leads to `LevelSelectScreen` (not Home).
+- **Navigation** — Back button leads to `LevelSelectScreen`.
 
 ### Painter Logic (`StraightArrowPainter`)
-- Draws a **straight line** from the tail cell centre to a tip point `0.45 × cellSize` beyond the head in the escape direction.
-- Renders a glow pass (blurred, semi-transparent) behind the crisp shaft.
-- Arrowhead is a **closed filled triangle** (`Path..close()`) — no stray line artefacts.
-- `hitTest` returns `false` so tap detection is delegated to `BentArrowData.hitRect` instead.
 
-### Arrow Generation (`level_manager.dart` — `_gen`)
-Three-pass algorithm:
-1. **Pass 1** — Scans every cell; tries horizontal then vertical placement with a cycling length pattern `[2,3,4,5,2,3,2,4,3,5]`.
-2. **Pass 2** — Fills remaining quota with length-2 horizontal arrows.
-3. **Pass 3** — Fills remaining quota with length-2 vertical arrows.
-
-Escape direction heuristic: arrows touching the left/right edge point outward; interior arrows point toward the nearer edge.
-
-### Collision Detection (`isPathClear`)
-Builds a set of occupied cells (all unsolved arrows except the tapped one), then walks from the arrow's head in the escape direction to the grid boundary. Returns `false` on first occupied cell found.
+- Straight shaft from tail-cell centre to head-cell edge, with glow + crisp passes.
+- Arrowhead is a closed filled triangle. `hitTest` returns `false` (tap detection delegated to `hitRect`).
 
 ### State Management
-Provider pattern. `GameProvider` tracks grid state and statistics; `AuthProvider` manages Supabase authentication.
+
+Provider pattern. `GameProvider` tracks statistics; `AuthProvider` manages authentication and account isolation.
 
 ### Data Persistence
-- **Cloud**: Stats and level progress stored in Supabase (`game_stats`, `level_progress` tables).
-- **Local**: SharedPreferences for fast local session handling and offline progress.
+
+- **Cloud**: Stats and level progress stored in Supabase (`game_stats`, `level_progress`).
+- **Local**: SharedPreferences for instant session handling and offline progress.
 
 ---
 
@@ -233,16 +238,12 @@ Provider pattern. `GameProvider` tracks grid state and statistics; `AuthProvider
 | Framework | Flutter (Dart) |
 | Backend | Supabase (Auth + PostgreSQL) |
 | State Management | Provider |
-| Animations | flutter_animate |
 | Audio | audioplayers |
 | Email (Contact) | EmailJS REST API |
-| Design | Figma & Canva |
 
 ---
 
 ## 🗄️ Supabase Schema
-
-### Required Tables
 
 ```sql
 -- Game statistics
@@ -285,30 +286,33 @@ Developed by a student of Urdaneta City University. This project is a practical 
 
 ## 📋 Changelog
 
-### v1.2.0 — Latest
-- ✅ **Lint fixes** — all `for` loop bodies in `level_base.dart` (lines 116, 162, 242) and `level_manager.dart` (lines 41, 47, 52, 56) wrapped in curly braces per `curly_braces_in_flow_control_structures` rule
-- ✅ **README corrected** — level table updated to match actual grid sizes (8×8 → 18×18) and arrow counts (10 → 100) from `level_manager.dart`
-- ✅ **Arrow shape clarified** — straight lines only (no L-shapes); `StraightArrowPainter` documented accurately
-- ✅ **Audio asset paths corrected** — `assets/audio/` (not `assets/sounds/`)
+### v1.3.0 — Production Final
+
+- ✅ **Real-Time Arrow Counter** — `ValueNotifier<int> arrowsRemaining` added to `BentLevelStateMixin`. HUD shows live `"N Arrows Remaining"` counter via `ValueListenableBuilder`, decrementing on each exit-animation completion.
+- ✅ **"Solid Square" label removed** — The static `Text('Solid Square · NxN · N Arrows')` widget and its spacer have been removed from all 10 level build methods. The HUD arrow counter replaces it.
+- ✅ **Hard Reset on Logout** — `AuthProvider.logout()` now calls `LevelUnlockService.instance.resetProgress()` before clearing SharedPreferences, preventing level-progress bleed to the next session.
+- ✅ **Account Isolation on Login** — `AuthProvider._handleLoginSuccess()` calls `resetProgress()` before persisting the session, forcing `LevelUnlockService` to fetch the authenticated user's real Supabase row on first load.
+- ✅ **`LevelUnlockService.resetProgress()` doc updated** — Covers all three call-sites: account deletion, logout, and login.
+- ✅ **README rewritten** — Merge conflict resolved; documents Real-Time Counter, Auth Isolation flow, and all prior features.
+
+### v1.2.0
+
+- ✅ Lint fixes — curly braces in flow-control structures across `level_base.dart` and `level_manager.dart`
+- ✅ README corrected — level table updated to match actual grid sizes and arrow counts
 - ✅ Architecture section rewritten to reflect `BentLevelStateMixin`, debounce logic, and `_gen` three-pass algorithm
 
 ### v1.1.0
+
 - ✅ All 10 levels rewritten with precise shapes and exact arrow counts per spec
 - ✅ HUD redesigned: Back Button · Level Label · Hearts · Timer + Linear Progress Bar
 - ✅ Audio fixed: wrong-move sound on bad tap; lose sound only on zero lives
-- ✅ Music paths corrected: `Lobby-Music.mp3` (menu) · `Ingame-Music.mp3` (game)
 - ✅ Settings screen: Audio modal with Music and SFX toggles
-- ✅ Records screen: Compact 60dp rows, accurate Wins/Losses/Matches/Win Rate/Days Active
+- ✅ Records screen: Compact rows, accurate Wins/Losses/Matches/Win Rate/Days Active
 - ✅ Master Unlock: clearing Level 10 permanently unlocks all levels for free replay
 - ✅ Hard delete: account deletion removes user from Supabase Auth + all public tables
-- ✅ `recordLevelLoss()` added to GameProvider — losses now accurately tracked
-- ✅ Contact screen: EmailJS sends to arrowarawsipaglang@gmail.com with validation
 
 ### v1.0.0 — Initial Release
+
 - Core gameplay with 10 levels
 - Supabase auth + stats sync
 - OTP email verification
-=======
-# ARROW-ARAW-SIPAG-LANG
-MOBILE GAME APP PROJECT
->>>>>>> f629d3f55275e3ee57b4b34a2a45eaeaf7a720cd

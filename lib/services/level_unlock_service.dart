@@ -120,10 +120,20 @@ class LevelUnlockService {
     }
   }
 
-  // ── Reset (used when account is deleted) ──────────────────────────────────
+  // ── Reset ─────────────────────────────────────────────────────────────────
 
-  /// Resets progress to Level 1 locally. Remote cleanup is handled by
-  /// SupabaseService.deleteAccount().
+  /// Resets local level-progress cache to Level 1.
+  ///
+  /// Called in three scenarios:
+  ///   1. Account deletion — wipes local data before the remote row is removed.
+  ///   2. Logout           — ensures the next user that logs in on this device
+  ///                         doesn't inherit the previous session's unlocks.
+  ///   3. Login / Sign-up  — forces a fresh Supabase fetch so THIS user's real
+  ///                         remote progress is authoritative (prevents bleed
+  ///                         from a prior tester account stored in SharedPrefs).
+  ///
+  /// Remote cleanup (rows in `level_progress`) is handled separately by
+  /// SupabaseService.deleteAccount() for the deletion case.
   Future<void> resetProgress() async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setInt(_kHighestLevel, 1);
