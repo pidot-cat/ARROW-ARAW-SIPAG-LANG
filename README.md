@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # 🏹 Arrow Araw: Sipag Lang
 A vibrant arrow puzzle escape mobile game built with Flutter.
 
@@ -307,3 +308,7 @@ Developed by a student of Urdaneta City University. This project is a practical 
 - Core gameplay with 10 levels
 - Supabase auth + stats sync
 - OTP email verification
+=======
+# ARROW-ARAW-SIPAG-LANG
+MOBILE GAME APP PROJECT
+>>>>>>> f629d3f55275e3ee57b4b34a2a45eaeaf7a720cd
