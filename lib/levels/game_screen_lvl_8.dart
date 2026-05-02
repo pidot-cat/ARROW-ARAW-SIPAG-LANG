@@ -1,5 +1,5 @@
 // lib/levels/game_screen_lvl_8.dart
-// Level 8 — Solid Square — Level8Manager
+// Level 8 — 16×16 — 80 Arrows
 
 import 'package:flutter/material.dart';
 import '../utils/app_colors.dart';

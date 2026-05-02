@@ -1,5 +1,5 @@
 // lib/levels/game_screen_lvl_9.dart
-// Level 9 — Solid Square — Level9Manager
+// Level 9 — 17×17 — 90 Arrows
 
 import 'package:flutter/material.dart';
 import '../utils/app_colors.dart';

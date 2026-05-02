@@ -1,5 +1,5 @@
 // lib/levels/game_screen_lvl_10.dart
-// Level 10 — Solid Square — Level10Manager
+// Level 10 — 18×18 — 100 Arrows
 
 import 'package:flutter/material.dart';
 import '../utils/app_colors.dart';

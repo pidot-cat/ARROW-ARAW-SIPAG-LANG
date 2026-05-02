@@ -1,5 +1,5 @@
 // lib/levels/game_screen_lvl_1.dart
-// Level 1 — 4×4 Solid Square — 12 Arrows
+// Level 1 — 8×8 — 10 Arrows
 
 import 'package:flutter/material.dart';
 import '../utils/app_colors.dart';

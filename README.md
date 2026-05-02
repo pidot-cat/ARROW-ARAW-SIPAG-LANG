@@ -146,8 +146,8 @@ always starts from a clean local state, regardless of how far the previous sessi
 ```text
 lib/
 ├── levels/
-│   ├── level_base.dart          # Core engine + BentLevelStateMixin
-│   ├── level_manager.dart       # Arrow generation algorithm
+│   ├── level_base.dart          
+│   ├── level_manager.dart       
 │   ├── game_screen_lvl_1.dart
 │   ├── game_screen_lvl_2.dart
 │   ├── game_screen_lvl_3.dart
@@ -162,7 +162,7 @@ lib/
 │   ├── arrow_model.dart
 │   └── game_stats_model.dart
 ├── providers/
-│   ├── auth_provider.dart       # Auth state + account isolation
+│   ├── auth_provider.dart       
 │   └── game_provider.dart
 ├── screens/
 │   ├── about_screen.dart
@@ -180,7 +180,7 @@ lib/
 │   └── terms_screen.dart
 ├── services/
 │   ├── audio_service.dart
-│   ├── level_unlock_service.dart  # Dual-storage progress + reset
+│   ├── level_unlock_service.dart  
 │   └── supabase_service.dart
 ├── utils/
 │   ├── app_colors.dart

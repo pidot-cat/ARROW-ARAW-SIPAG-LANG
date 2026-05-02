@@ -1,5 +1,5 @@
 // lib/levels/game_screen_lvl_6.dart
-// Level 6 — Solid Square — Level6Manager
+// Level 6 — 14×14 — 60 Arrows
 
 import 'package:flutter/material.dart';
 import '../utils/app_colors.dart';
