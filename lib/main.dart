@@ -1,3 +1,18 @@
+// ─────────────────────────────────────────────────────────────────────────────
+// lib/main.dart
+// Application entry point for Arrow Araw Sipag Lang.
+//
+// Responsibilities:
+//   • Bootstraps the Supabase client before the widget tree is mounted.
+//   • Locks the device orientation to portrait mode.
+//   • Attaches the AudioService lifecycle observer so music stops when the app
+//     is backgrounded or closed.
+//   • Wraps the app in MultiProvider, registering GameProvider and AuthProvider
+//     so all descendant widgets can access game and auth state.
+//   • Defines the global MaterialApp theme (dark background, white text,
+//     Roboto font) and the named route table.
+// ─────────────────────────────────────────────────────────────────────────────
+
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'screens/splash_screen.dart';

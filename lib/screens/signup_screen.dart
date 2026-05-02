@@ -1,3 +1,10 @@
+// ─────────────────────────────────────────────────────────────────────────────
+// lib/screens/signup_screen.dart
+// Registers a new user account via Supabase Auth (email + password).
+// Collects username, email, password, and confirm-password fields.
+// Validates all inputs client-side before forwarding to [AuthProvider.signUp()].
+// On success, navigates to HomeScreen; on failure, surfaces the error inline.
+// ─────────────────────────────────────────────────────────────────────────────
 // ============================================================
 // lib/screens/signup_screen.dart
 // ============================================================

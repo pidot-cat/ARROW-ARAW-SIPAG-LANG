@@ -1,3 +1,9 @@
+// ─────────────────────────────────────────────────────────────────────────────
+// lib/screens/level_select_screen.dart
+// Grid of level cards showing which stages are unlocked for the current user.
+// Reads the highest unlocked level from [LevelUnlockService] and renders locked
+// levels with a padlock icon so they cannot be tapped.
+// ─────────────────────────────────────────────────────────────────────────────
 // lib/screens/level_select_screen.dart
 // ─────────────────────────────────────────────────────────────────────────────
 // CLEAN-LABELS: All shape-name labels (Heart, Circle, etc.) removed from

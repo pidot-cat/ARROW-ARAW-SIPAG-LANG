@@ -1,3 +1,9 @@
+// ─────────────────────────────────────────────────────────────────────────────
+// lib/screens/settings_screen.dart
+// Allows the player to toggle background music and SFX on/off via
+// [AudioService], and change their display username stored in Supabase.
+// Settings are persisted immediately; no explicit Save button is required.
+// ─────────────────────────────────────────────────────────────────────────────
 // lib/screens/settings_screen.dart
 // ─────────────────────────────────────────────────────────────────────────────
 // Settings Screen — Ultra-Refined v2

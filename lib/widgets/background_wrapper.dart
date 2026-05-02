@@ -1,3 +1,18 @@
+// ─────────────────────────────────────────────────────────────────────────────
+// lib/widgets/background_wrapper.dart
+// Reusable layout shell that applies the app's dark background image to any
+// screen without duplicating the BoxDecoration and SafeArea boilerplate.
+//
+// Props:
+//   child          — the screen-specific content to render inside the wrapper.
+//   showBackButton — when true, overlays an iOS-style back arrow in the top-left
+//                    corner that calls Navigator.pop().
+//   showLogo       — when true, centres the app logo at the top of the screen
+//                    (used on the Splash and Home screens).
+//
+// The background image is rendered at 30 % opacity so the dark overlay remains
+// readable against the game's colour palette.
+// ─────────────────────────────────────────────────────────────────────────────
 import 'package:flutter/material.dart';
 import '../utils/constants.dart';
 

@@ -1,3 +1,15 @@
+// ─────────────────────────────────────────────────────────────────────────────
+// lib/utils/constants.dart
+// App-wide compile-time constants grouped in the [AppConstants] class.
+//
+// Categories:
+//   Game configuration — grid size, initial lives, obstacle density.
+//   Animation durations — splash hold time, arrow move speed, game-over delay.
+//   Arrow types — direction string labels used by the spawner logic.
+//   Storage keys — SharedPreferences keys for persisting user and game state.
+//   Asset paths — canonical paths for all image and audio assets so no
+//                 screen needs to hard-code a string literal.
+// ─────────────────────────────────────────────────────────────────────────────
 class AppConstants {
   // Game Configuration
   static const int gridSize = 6;

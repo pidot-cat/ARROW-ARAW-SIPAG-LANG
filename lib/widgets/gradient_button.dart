@@ -1,3 +1,14 @@
+// ─────────────────────────────────────────────────────────────────────────────
+// lib/widgets/gradient_button.dart
+// Reusable full-width call-to-action button with a gradient fill and drop shadow.
+//
+// Accepts two gradient variants via the [isPrimary] flag:
+//   true  (default) — AppColors.primaryGradient  (blue/cyan family)
+//   false           — AppColors.secondaryGradient (alternate accent)
+//
+// The button uses Material + InkWell instead of ElevatedButton so the ink
+// ripple respects the rounded border without clipping artifacts.
+// ─────────────────────────────────────────────────────────────────────────────
 import 'package:flutter/material.dart';
 import '../utils/app_colors.dart';
 

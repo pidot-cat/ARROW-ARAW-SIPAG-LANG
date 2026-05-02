@@ -1,3 +1,19 @@
+// ─────────────────────────────────────────────────────────────────────────────
+// lib/models/game_stats_model.dart
+// Data model for a player's cumulative game statistics.
+//
+// Stores wins, losses, total matches, and total days played.
+// Exposes a computed winRate getter (percentage, 0–100).
+//
+// Serialisation:
+//   toMap()       — converts to Map<String, dynamic> for Supabase upsert or
+//                   SharedPreferences storage.
+//   fromMap()     — factory constructor that rehydrates the model from a stored
+//                   map; missing keys default to zero to handle legacy records.
+//
+// copyWith() allows producing modified snapshots without mutating the instance,
+// which is important for ChangeNotifier providers that compare old vs new state.
+// ─────────────────────────────────────────────────────────────────────────────
 class GameStatsModel {
   int totalWins;
   int totalLosses;

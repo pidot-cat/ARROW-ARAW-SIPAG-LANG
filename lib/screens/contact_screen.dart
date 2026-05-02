@@ -1,15 +1,21 @@
-// lib/screens/contact_screen.dart
 // ─────────────────────────────────────────────────────────────────────────────
-// Arrow Araw — Contact Us Screen  (FINAL RECTIFICATION v2)
+// lib/screens/contact_screen.dart
+// Contact Us screen — lets authenticated users send a support message via
+// EmailJS without leaving the app.
 //
-// [FIX CONTACT-1] Email field REMOVED from UI — user only types Name + Message.
-// [FIX CONTACT-2] Authenticated user's email is read from Supabase and used
-//                 automatically in the backend (reply_to / from_name fallback).
-//                 No email input required from the user.
-// [FIX CONTACT-3] Validation now only requires a non-empty Message.
-//                 Name remains optional (falls back to account email in payload).
-// [FIX CONTACT-4] EmailJS payload unchanged — reply_to still uses the account
-//                 email so the team can reply directly to the sender.
+// EmailJS Reply-To fix (CONTACT-2):
+//   The authenticated user's email is read from Supabase and injected into the
+//   `reply_to` template parameter.  EmailJS forwards this value to the email
+//   client, so hitting "Reply" in Gmail opens a draft addressed to the user —
+//   not to the app's own sending address.
+//
+// UI behaviour:
+//   • Name field is optional; falls back to the account email in the payload.
+//   • The account email is shown as a read-only badge (lock icon + cyan text)
+//     so the user knows which address will receive replies.
+//   • Message field is the only required input.
+//   • A CircularProgressIndicator replaces the Send button while the HTTP
+//     request is in flight.
 // ─────────────────────────────────────────────────────────────────────────────
 
 import 'dart:convert';
@@ -22,11 +28,16 @@ import '../widgets/gradient_input_field.dart';
 import '../utils/constants.dart';
 
 // ── EmailJS credentials ───────────────────────────────────────────────────────
-const String _kServiceId  = 'service_vtus5km';
-const String _kTemplateId = 'template_eb907ud';
-const String _kPublicKey  = 'Pc1EQujpT72L2Po8V';
+// These values come from the EmailJS dashboard (emailjs.com → Account → API Keys
+// and Email Services).  Keep them in a .env file or --dart-define flags before
+// publishing to production.
+const String _kServiceId  = 'service_vtus5km';   // EmailJS service ID
+const String _kTemplateId = 'template_eb907ud';   // EmailJS template ID
+const String _kPublicKey  = 'Pc1EQujpT72L2Po8V'; // EmailJS public key
 const String _kEndpoint   = 'https://api.emailjs.com/api/v1.0/email/send';
 
+/// ContactScreen — stateful form that submits user concerns to the support
+/// email address via the EmailJS REST API.
 class ContactScreen extends StatefulWidget {
   const ContactScreen({super.key});
   @override
@@ -34,26 +45,44 @@ class ContactScreen extends StatefulWidget {
 }
 
 class _ContactScreenState extends State<ContactScreen> {
+  /// Controller for the optional name input field.
   final _nameCtrl    = TextEditingController();
+
+  /// Controller for the required message input field.
   final _messageCtrl = TextEditingController();
+
+  /// Tracks whether an EmailJS request is currently in flight.
   bool  _isSending   = false;
 
-  // [FIX CONTACT-2] Account email auto-fetched — never shown as an input field
+  /// Reads the signed-in user's email address directly from the Supabase auth
+  /// session.  Returns an empty string when no user is logged in (should not
+  /// happen on this screen, which is behind an auth guard).
   String get _accountEmail =>
       Supabase.instance.client.auth.currentUser?.email?.trim() ?? '';
 
   @override
   void dispose() {
+    // Release text-editing controllers to avoid memory leaks.
     _nameCtrl.dispose();
     _messageCtrl.dispose();
     super.dispose();
   }
 
+  /// Validates inputs, builds the EmailJS payload, and posts it to the API.
+  ///
+  /// The `reply_to` field receives [_accountEmail] so the support team can
+  /// reply directly to the user from their email client without any copy-paste.
+  ///
+  /// Template variables used (must match the EmailJS template exactly):
+  ///   {{from_name}} — display name shown in the email subject/body.
+  ///   {{reply_to}}  — the user's email; used as the Reply-To header.
+  ///   {{message}}   — the body text typed by the user.
+  ///   {{to_email}}  — the destination support address.
   Future<void> _submit() async {
     final name    = _nameCtrl.text.trim();
     final message = _messageCtrl.text.trim();
 
-    // [FIX CONTACT-3] Only message is required
+    // Guard: message must not be blank before making a network call.
     if (message.isEmpty) {
       _snack('Please enter a message.', Colors.red);
       return;
@@ -61,7 +90,8 @@ class _ContactScreenState extends State<ContactScreen> {
 
     setState(() => _isSending = true);
     try {
-      // reply_to uses the authenticated account email automatically
+      // Use the typed name when available; otherwise fall back to the email
+      // address so `from_name` is never an empty string in the template.
       final senderName = name.isNotEmpty ? name : _accountEmail;
 
       final payload = {
@@ -69,10 +99,10 @@ class _ContactScreenState extends State<ContactScreen> {
         'template_id': _kTemplateId,
         'user_id':     _kPublicKey,
         'template_params': {
-          'from_name': senderName,                          // → {{from_name}}
-          'reply_to':  _accountEmail,                       // → {{reply_to}}
-          'message':   message,                             // → {{message}}
-          'to_email':  'arrowarawsipaglang@gmail.com',     // → {{to_email}}
+          'from_name': senderName,                       // → {{from_name}}
+          'reply_to':  _accountEmail,                    // → {{reply_to}}  ← KEY FIX
+          'message':   message,                          // → {{message}}
+          'to_email':  'arrowarawsipaglang@gmail.com',  // → {{to_email}}
         },
       };
 
@@ -93,6 +123,7 @@ class _ContactScreenState extends State<ContactScreen> {
 
       if (!mounted) return;
       if (res.statusCode == 200) {
+        // Clear the form on success so the user can easily send another message.
         _nameCtrl.clear();
         _messageCtrl.clear();
         _snack('Message sent to arrowarawsipaglang@gmail.com ✓', Colors.green);
@@ -106,10 +137,12 @@ class _ContactScreenState extends State<ContactScreen> {
       if (!mounted) return;
       _snack('Network error. Check your connection.', Colors.red);
     } finally {
+      // Always re-enable the Send button, even if an exception was thrown.
       if (mounted) setState(() => _isSending = false);
     }
   }
 
+  /// Displays a floating [SnackBar] with the given [msg] and [color].
   void _snack(String msg, Color color) {
     ScaffoldMessenger.of(context).showSnackBar(SnackBar(
       content: Text(msg),
@@ -140,7 +173,7 @@ class _ContactScreenState extends State<ContactScreen> {
                 style: TextStyle(color: Colors.white.withAlpha(179), fontSize: 15)),
             SizedBox(height: size.height * 0.035),
 
-            // ── [FIX CONTACT-1] Name only — Email field REMOVED ──────────────
+            // ── Optional name field ──────────────────────────────────────────
             GradientInputField(
               hintText: 'Your Name (optional)',
               controller: _nameCtrl,
@@ -149,7 +182,9 @@ class _ContactScreenState extends State<ContactScreen> {
             ),
             const SizedBox(height: 14),
 
-            // ── [FIX CONTACT-2] Account email displayed as read-only badge ───
+            // ── Read-only account email badge ────────────────────────────────
+            // Shows the user which address will appear in the Reply-To header.
+            // Not editable — always sourced from the Supabase auth session.
             if (_accountEmail.isNotEmpty)
               Container(
                 width: double.infinity,
@@ -174,7 +209,7 @@ class _ContactScreenState extends State<ContactScreen> {
               ),
             if (_accountEmail.isNotEmpty) const SizedBox(height: 14),
 
-            // ── Message ──────────────────────────────────────────────────────
+            // ── Required message field ───────────────────────────────────────
             GradientInputField(
               hintText: 'Describe your problem...',
               controller: _messageCtrl,
@@ -184,7 +219,9 @@ class _ContactScreenState extends State<ContactScreen> {
             ),
             const SizedBox(height: 30),
 
-            // ── Send button ───────────────────────────────────────────────────
+            // ── Send button / loading indicator ──────────────────────────────
+            // Replaced by a spinner while [_isSending] is true to prevent
+            // duplicate submissions.
             _isSending
                 ? const CircularProgressIndicator(
                     valueColor: AlwaysStoppedAnimation<Color>(Colors.cyan))
@@ -192,7 +229,7 @@ class _ContactScreenState extends State<ContactScreen> {
 
             const SizedBox(height: 24),
 
-            // ── Feedback email display ────────────────────────────────────────
+            // ── Fallback contact info ────────────────────────────────────────
             Container(
               padding: const EdgeInsets.all(18),
               decoration: BoxDecoration(

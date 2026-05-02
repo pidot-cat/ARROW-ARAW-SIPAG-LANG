@@ -1,3 +1,9 @@
+// ─────────────────────────────────────────────────────────────────────────────
+// lib/screens/splash_screen.dart
+// Animated launch screen shown for [AppConstants.splashDuration] on cold start.
+// Checks the Supabase session and SharedPreferences to determine whether the
+// user is already authenticated, then routes to HomeScreen or LoginScreen.
+// ─────────────────────────────────────────────────────────────────────────────
 // lib/screens/splash_screen.dart
 // ─────────────────────────────────────────────────────────────────────────────
 // Splash Screen — launch screen with mandatory internet connectivity check.

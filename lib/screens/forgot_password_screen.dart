@@ -1,3 +1,10 @@
+// ─────────────────────────────────────────────────────────────────────────────
+// lib/screens/forgot_password_screen.dart
+// Guides users through the Supabase OTP-based password-reset flow.
+// Step 1 — user enters their registered email; a reset OTP is sent by Supabase.
+// Step 2 — user enters the OTP and a new password pair to complete the reset.
+// Delegates to [AuthProvider] / [SupabaseService] for all Supabase calls.
+// ─────────────────────────────────────────────────────────────────────────────
 // lib/screens/forgot_password_screen.dart
 // 3-step password recovery flow:
 //   Step 1 — User enters email → we call Supabase to send a recovery OTP.

@@ -1,3 +1,14 @@
+// ─────────────────────────────────────────────────────────────────────────────
+// lib/utils/app_colors.dart
+// Centralises all colour constants and gradient definitions used throughout
+// the app so that the design palette can be changed from a single file.
+//
+// Exports:
+//   AppColors.primaryDark       — deep navy/dark background base.
+//   AppColors.backgroundDark    — scaffold background colour.
+//   AppColors.primaryGradient   — blue-to-cyan LinearGradient for primary CTAs.
+//   AppColors.secondaryGradient — alternate accent gradient.
+// ─────────────────────────────────────────────────────────────────────────────
 // lib/utils/app_colors.dart
 // Central color palette and gradient definitions for the entire app.
 //

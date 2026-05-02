@@ -1,3 +1,17 @@
+// ─────────────────────────────────────────────────────────────────────────────
+// lib/widgets/gradient_input_field.dart
+// Themed text-input widget used across all form screens (login, sign-up,
+// contact, forgot-password).
+//
+// Features:
+//   • Cyan gradient border that intensifies on focus.
+//   • Optional leading icon (prefixIcon) for semantic context.
+//   • Password-visibility toggle (showToggle: true) for password fields.
+//   • readOnly flag — renders the field as a non-editable display value
+//     (used for the locked account-email badge on ContactScreen).
+//   • maxLines support — expands to a textarea for multi-line inputs such as
+//     the message body on ContactScreen.
+// ─────────────────────────────────────────────────────────────────────────────
 // lib/widgets/gradient_input_field.dart
 // [FIX 5A] Added readOnly parameter — locks the email field in ContactScreen.
 

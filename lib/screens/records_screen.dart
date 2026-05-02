@@ -1,3 +1,10 @@
+// ─────────────────────────────────────────────────────────────────────────────
+// lib/screens/records_screen.dart
+// Displays the player's cumulative statistics (wins, losses, win-rate, days
+// played) loaded from Supabase via [SupabaseService.getGameStats()].
+// Uses a FutureBuilder so the screen renders a shimmer/loading state while the
+// async fetch is in progress.
+// ─────────────────────────────────────────────────────────────────────────────
 // lib/screens/records_screen.dart
 // ─────────────────────────────────────────────────────────────────────────────
 // Records Screen — displays the player's lifetime game statistics fetched

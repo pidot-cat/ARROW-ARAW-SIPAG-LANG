@@ -1,3 +1,12 @@
+// ─────────────────────────────────────────────────────────────────────────────
+// lib/widgets/life_indicator.dart
+// Displays the player's remaining lives as a horizontal row of heart icons.
+//
+// Renders [maxLives] hearts side-by-side; hearts at index < [currentLives]
+// use the red (active) asset, and the remaining hearts use the black (lost)
+// asset.  The widget is stateless — the parent rebuilds it whenever
+// [currentLives] changes via a ChangeNotifier or setState call.
+// ─────────────────────────────────────────────────────────────────────────────
 import 'package:flutter/material.dart';
 import '../utils/constants.dart';
 

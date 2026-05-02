@@ -1,3 +1,11 @@
+// ─────────────────────────────────────────────────────────────────────────────
+// lib/widgets/game_over_overlay.dart
+// Semi-transparent overlay that covers the game grid when the player loses all
+// lives.  Displays the 'Game Over' image and action buttons (Retry, Home).
+//
+// Rendered inside a Stack in each level screen so it appears above the grid
+// without triggering a full navigation push.
+// ─────────────────────────────────────────────────────────────────────────────
 import 'package:flutter/material.dart';
 import '../utils/app_colors.dart';
 import '../utils/constants.dart';

@@ -1,3 +1,9 @@
+// ─────────────────────────────────────────────────────────────────────────────
+// lib/screens/home_screen.dart
+// Main hub screen shown after login. Provides navigation entry points to Play,
+// Records, Settings, Contact, and About sections.
+// Reads [AuthProvider] to display the current username and handle sign-out.
+// ─────────────────────────────────────────────────────────────────────────────
 // lib/screens/home_screen.dart
 // ─────────────────────────────────────────────────────────────────────────────
 // FIX-3a LOBBY MUSIC ON LAUNCH:

@@ -1,3 +1,10 @@
+// ─────────────────────────────────────────────────────────────────────────────
+// lib/screens/game_screen.dart
+// Core gameplay screen for the legacy single-level entry point.
+// Renders the arrow grid using [GameProvider] state and handles tap input to
+// redirect arrows.  Victory and Game Over overlays are shown as Stack children
+// rather than full-screen navigation pushes to avoid rebuild flicker.
+// ─────────────────────────────────────────────────────────────────────────────
 // lib/screens/game_screen.dart
 // ─────────────────────────────────────────────────────────────────────────────
 // Game Screen — the classic (non-level-base) game screen used by GameProvider.

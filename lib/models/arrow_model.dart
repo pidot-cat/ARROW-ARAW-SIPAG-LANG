@@ -1,3 +1,25 @@
+// ─────────────────────────────────────────────────────────────────────────────
+// lib/models/arrow_model.dart
+// Data model representing a single arrow entity on the game grid.
+//
+// ArrowSegment — an (x, y) grid cell occupied by one segment of an arrow body.
+//   Equality and hashCode are overridden so segment lists can be compared and
+//   stored in Sets without duplicates.
+//
+// ArrowDirection — enum of the five possible arrow orientations: up, down,
+//   left, right, and the special white/wildcard direction.
+//
+// ArrowModel — immutable-friendly value object describing a full arrow:
+//   segments  : ordered list of ArrowSegment cells from tail to head.
+//   direction : which way the arrowhead points.
+//   color     : the tint applied to this arrow's sprite.
+//   size      : thickness/scale factor relative to the grid cell size.
+//   isEscaping: true while the arrow is animating off the board.
+//   isRemoved : true after the arrow has left the board and must be despawned.
+//
+//   copyWith() follows the Flutter pattern for producing modified copies
+//   without mutating the original instance.
+// ─────────────────────────────────────────────────────────────────────────────
 import 'package:flutter/material.dart';
 
 enum ArrowDirection { up, down, left, right, white }

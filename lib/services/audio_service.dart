@@ -222,3 +222,24 @@ class AudioService with WidgetsBindingObserver {
     await resumeMenuMusic();
   }
 }
+
+// ─────────────────────────────────────────────────────────────────────────────
+// AudioService — singleton that centralises all audio playback for the app.
+//
+// Two logical audio channels:
+//   _musicPlayer — looping background tracks (lobby, in-game, win, lose).
+//   _sfxPlayer / _wrongPlayer — one-shot sound effects (arrow click, wrong move).
+//
+// Key public API:
+//   playMenuMusic()      Starts lobby background music; no-op if already playing.
+//   playGameMusic()      Crossfades to the in-game track.
+//   playWinSound()       Plays the win jingle (debounced — fires only once per round).
+//   playLoseSound()      Plays the lose jingle.
+//   playArrowSound()     Plays the arrow-placement click SFX.
+//   playWrongSound()     Plays the wrong-move SFX.
+//   toggleMusic()        Pauses or resumes background music; persists the
+//                        preference across sessions via SharedPreferences.
+//   toggleSfx()          Mutes or un-mutes SFX.
+//   attachLifecycleObserver()  Registers this service as a WidgetsBindingObserver
+//                              so music pauses when the app is backgrounded.
+// ─────────────────────────────────────────────────────────────────────────────

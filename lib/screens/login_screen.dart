@@ -1,3 +1,9 @@
+// ─────────────────────────────────────────────────────────────────────────────
+// lib/screens/login_screen.dart
+// Authenticates an existing user via email and password using Supabase Auth.
+// Delegates the sign-in call to [AuthProvider.signIn()] and navigates to
+// HomeScreen on success, or displays an inline error message on failure.
+// ─────────────────────────────────────────────────────────────────────────────
 // lib/screens/login_screen.dart
 // Login screen — validates email/password then calls AuthProvider.login().
 // UI FIX: Password field now uses GradientInputField with showToggle:true
