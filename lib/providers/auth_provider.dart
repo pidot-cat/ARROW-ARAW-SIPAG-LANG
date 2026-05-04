@@ -365,7 +365,18 @@ class AuthProvider with ChangeNotifier {
       return e.message; // e.g. "Invalid login credentials"
     } catch (e) {
       debugPrint('[AuthProvider] login error: $e');
-      return 'Login failed: ${e.toString()}';
+      final err = e.toString();
+
+      // Network/DNS errors — Supabase host unreachable (no internet, Supabase
+      // project paused, or DNS failure).  Show a friendly message instead of
+      // the raw SocketException / ClientException technical string.
+      if (err.contains('SocketException') ||
+          err.contains('Failed host lookup') ||
+          err.contains('ClientException')) {
+        return 'No internet connection. Please check your network and try again.';
+      }
+
+      return 'Login failed. Please try again.';
     }
 
     // Fallback if user or session were null without throwing
