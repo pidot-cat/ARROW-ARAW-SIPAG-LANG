@@ -1,5 +1,8 @@
 // lib/levels/game_screen_lvl_8.dart
-// Level 8 — 16×16 — 80 Arrows
+
+// Purpose: Level 8 entry-point screen. A thin configuration shell that
+//          supplies level-specific parameters to BentLevelStateMixin (level_base.dart),
+//          which contains all gameplay logic.
 
 import 'package:flutter/material.dart';
 import '../utils/app_colors.dart';
@@ -25,17 +28,26 @@ class GameScreenLvl8 extends StatefulWidget {
   State<GameScreenLvl8> createState() => _State();
 }
 
-class _State extends State<GameScreenLvl8> with BentLevelStateMixin<GameScreenLvl8> {
-  @override int get levelNumber => 8;
-  @override int get rows => Level8Manager.rows;
-  @override int get cols => Level8Manager.cols;
-  @override int get arrowCount => 80;
-  @override List<BentArrowData> Function() get buildArrowsFn => Level8Manager.build;
-  @override Widget Function() get nextLevelBuilder =>
-      () => const GameScreenLvl9();
+class _State extends State<GameScreenLvl8>
+    with BentLevelStateMixin<GameScreenLvl8> {
+  @override
+  int get levelNumber => 8;
+  @override
+  int get rows => Level8Manager.rows;
+  @override
+  int get cols => Level8Manager.cols;
+  @override
+  int get arrowCount => 80;
+  @override
+  List<BentArrowData> Function() get buildArrowsFn => Level8Manager.build;
+  @override
+  Widget Function() get nextLevelBuilder => () => const GameScreenLvl9();
 
   @override
-  void initState() { super.initState(); initLevelState(); }
+  void initState() {
+    super.initState();
+    initLevelState();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -49,13 +61,15 @@ class _State extends State<GameScreenLvl8> with BentLevelStateMixin<GameScreenLv
     return Scaffold(
       backgroundColor: AppColors.darkNavy,
       body: Stack(children: [
-        SafeArea(child: Column(children: [
+        SafeArea(
+            child: Column(children: [
           buildHUD(),
           const SizedBox(height: 4),
           Expanded(child: Center(child: buildGrid(cellSize, shape))),
         ])),
         if (gameOver) GameOverOverlay(onRetry: restart, onBack: quit),
-        if (victory) VictoryOverlay(isLastLevel: false, onNext: goNextLevel, onBack: quit),
+        if (victory)
+          VictoryOverlay(isLastLevel: false, onNext: goNextLevel, onBack: quit),
       ]),
     );
   }

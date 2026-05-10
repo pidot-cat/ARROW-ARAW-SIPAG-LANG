@@ -1,15 +1,8 @@
-// ─────────────────────────────────────────────────────────────────────────────
 // lib/screens/level_select_screen.dart
+
 // Grid of level cards showing which stages are unlocked for the current user.
 // Reads the highest unlocked level from [LevelUnlockService] and renders locked
 // levels with a padlock icon so they cannot be tapped.
-// ─────────────────────────────────────────────────────────────────────────────
-// lib/screens/level_select_screen.dart
-// ─────────────────────────────────────────────────────────────────────────────
-// CLEAN-LABELS: All shape-name labels (Heart, Circle, etc.) removed from
-//   both locked and unlocked cards. Cards now show only: level number,
-//   grid size, and difficulty badge — no shape text whatsoever.
-// ─────────────────────────────────────────────────────────────────────────────
 
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
@@ -45,15 +38,30 @@ class _LevelSelectScreenState extends State<LevelSelectScreen> {
 
   // Grid size label for each level (shape names intentionally removed).
   static const List<String> _levelGrids = [
-    '8×8', '10×10', '11×11', '12×12', '13×13',
-    '14×14', '15×15', '16×16', '17×17', '18×18',
+    '8×8',
+    '10×10',
+    '11×11',
+    '12×12',
+    '13×13',
+    '14×14',
+    '15×15',
+    '16×16',
+    '17×17',
+    '18×18',
   ];
 
   // Accent colour for each level card.
   static const List<Color> _levelColors = [
-    Color(0xFF1E88E5), Color(0xFF00C853), Color(0xFFFFD600), Color(0xFFFFD600),
-    Color(0xFFFF6D00), Color(0xFFFF6D00), Color(0xFFD50000), Color(0xFFD50000),
-    Color(0xFFAA00FF), Color(0xFFAA00FF),
+    Color(0xFF1E88E5),
+    Color(0xFF00C853),
+    Color(0xFFFFD600),
+    Color(0xFFFFD600),
+    Color(0xFFFF6D00),
+    Color(0xFFFF6D00),
+    Color(0xFFD50000),
+    Color(0xFFD50000),
+    Color(0xFFAA00FF),
+    Color(0xFFAA00FF),
   ];
 
   // ── Lifecycle ─────────────────────────────────────────────────────────────
@@ -77,17 +85,28 @@ class _LevelSelectScreenState extends State<LevelSelectScreen> {
 
   Widget _levelScreen(int level) {
     switch (level) {
-      case 1:  return const GameScreenLvl1();
-      case 2:  return const GameScreenLvl2();
-      case 3:  return const GameScreenLvl3();
-      case 4:  return const GameScreenLvl4();
-      case 5:  return const GameScreenLvl5();
-      case 6:  return const GameScreenLvl6();
-      case 7:  return const GameScreenLvl7();
-      case 8:  return const GameScreenLvl8();
-      case 9:  return const GameScreenLvl9();
-      case 10: return const GameScreenLvl10();
-      default: return const GameScreenLvl1();
+      case 1:
+        return const GameScreenLvl1();
+      case 2:
+        return const GameScreenLvl2();
+      case 3:
+        return const GameScreenLvl3();
+      case 4:
+        return const GameScreenLvl4();
+      case 5:
+        return const GameScreenLvl5();
+      case 6:
+        return const GameScreenLvl6();
+      case 7:
+        return const GameScreenLvl7();
+      case 8:
+        return const GameScreenLvl8();
+      case 9:
+        return const GameScreenLvl9();
+      case 10:
+        return const GameScreenLvl10();
+      default:
+        return const GameScreenLvl1();
     }
   }
 
@@ -158,7 +177,8 @@ class _LevelSelectScreenState extends State<LevelSelectScreen> {
         ),
       ),
       body: _loading
-          ? const Center(child: CircularProgressIndicator(color: Colors.white54))
+          ? const Center(
+              child: CircularProgressIndicator(color: Colors.white54))
           : Container(
               decoration: const BoxDecoration(
                 gradient: LinearGradient(

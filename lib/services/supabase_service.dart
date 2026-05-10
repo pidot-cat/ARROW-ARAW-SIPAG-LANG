@@ -1,65 +1,10 @@
-// ============================================================
 // lib/services/supabase_service.dart
-// ============================================================
-//
+
 // PURPOSE:
 //   This file is the single point of contact between the Flutter
 //   app and the Supabase backend. Every Supabase API call goes
 //   through this service — no screen or provider talks to Supabase
 //   directly. This separation makes it easy to swap backends later.
-//
-// WHY THIS FILE EXISTS (for instructor):
-//   Flutter apps follow a layered architecture:
-//     UI Screen → Provider (state) → Service (API) → Backend
-//   This class is the "Service" layer.
-//
-// ROOT CAUSE OF "unexpected_failure / Error sending confirmation email":
-//   This error does NOT come from the Flutter/Dart code.
-//   It comes from Supabase's server when it tries to send an email
-//   but has no SMTP provider configured. The fix is 100% in the
-//   Supabase Dashboard — see the Dashboard Fix section below.
-//
-//   The original signUp() call was also missing the 'emailRedirectTo'
-//   parameter. While this doesn't cause the SMTP error, it IS required
-//   when using OTP-style email confirmation so Supabase knows this is
-//   an OTP flow and not a magic-link flow. Added below.
-//
-// ============================================================
-// SUPABASE DASHBOARD FIX (do these steps exactly):
-// ============================================================
-//
-//  STEP 1 — Disable the built-in email confirmation (fastest fix):
-//    Supabase Dashboard → Authentication → Providers → Email
-//    Toggle OFF "Confirm email"
-//    → Users are confirmed instantly; no email is ever sent.
-//    → signUp() returns a session immediately → no OTP screen needed.
-//    Use this for development / testing.
-//
-//  STEP 2 — (Optional) Enable OTP emails properly for production:
-//    a) Go to: Project Settings → Auth → SMTP Settings
-//       Turn ON "Enable Custom SMTP"
-//       Fill in your SMTP server details (e.g. SendGrid, Mailgun,
-//       Gmail App Password, Resend.io — all work on free tiers).
-//    b) Go to: Authentication → Providers → Email
-//       Toggle ON "Confirm email"
-//       Toggle ON "Secure email change" (recommended)
-//    c) Go to: Authentication → Email Templates → Confirm signup
-//       Ensure the template body contains {{ .Token }} (6-digit code)
-//       NOT a magic-link URL. The default Supabase template uses a
-//       magic link, which is why signUp() fails when you expect an OTP.
-//       Replace the link template with:
-//         "Your verification code is: {{ .Token }}"
-//    d) Go to: Authentication → Rate Limits
-//       Set "Email rate limit" to at least 5 per hour for testing.
-//
-//  WHY the original code got "unexpected_failure":
-//    Supabase tried to send a confirmation email but:
-//      • The built-in Supabase SMTP (used in free projects) has strict
-//        rate limits and sometimes fails entirely on new projects.
-//      • No custom SMTP was configured.
-//    The server-side failure is surfaced as "unexpected_failure".
-//
-// ============================================================
 
 // Import the Supabase Flutter SDK — provides SupabaseClient, AuthResponse,
 // User, Session, OtpType, and all other Supabase types used below.
@@ -73,7 +18,6 @@ import '../models/game_stats_model.dart';
 /// All methods are static so callers never need to instantiate this class:
 ///   final r = await SupabaseService.signUp(email: ..., ...);
 class SupabaseService {
-
   // ── Private client getter ─────────────────────────────────────────────────
   //
   // Supabase.instance.client is the singleton SupabaseClient created in
@@ -117,7 +61,7 @@ class SupabaseService {
   }) async {
     // client.auth.signUp() calls the Supabase Auth REST endpoint POST /auth/v1/signup
     return await _client.auth.signUp(
-      email:    email,
+      email: email,
       password: password,
 
       // Store the username inside the user's metadata object.
@@ -155,7 +99,7 @@ class SupabaseService {
     return await _client.auth.verifyOTP(
       email: email,
       token: token,
-      type:  type,
+      type: type,
     );
   }
 
@@ -183,7 +127,7 @@ class SupabaseService {
   static Future<AuthResponse> signIn(String email, String password) async {
     // signInWithPassword() calls POST /auth/v1/token?grant_type=password
     return await _client.auth.signInWithPassword(
-      email:    email,
+      email: email,
       password: password,
     );
   }
@@ -303,12 +247,12 @@ class SupabaseService {
     // .upsert() calls POST /rest/v1/game_stats with Prefer: resolution=merge-duplicates
     await _client.from('game_stats').upsert(
       {
-        'user_id':       user.id,
-        'total_wins':    stats.totalWins,
-        'total_losses':  stats.totalLosses,
+        'user_id': user.id,
+        'total_wins': stats.totalWins,
+        'total_losses': stats.totalLosses,
         'total_matches': stats.totalMatches,
-        'total_days':    stats.totalDays,
-        'updated_at':    DateTime.now().toIso8601String(), // ISO-8601 timestamp
+        'total_days': stats.totalDays,
+        'updated_at': DateTime.now().toIso8601String(), // ISO-8601 timestamp
       },
       onConflict: 'user_id', // Which column to check for an existing row
     );
@@ -337,10 +281,10 @@ class SupabaseService {
     // Parse the returned Map into a typed Dart model object.
     // The null-coalescing (?? 0) handles legacy rows that might be missing a column.
     return GameStatsModel(
-      totalWins:    (response['total_wins']    as int?) ?? 0,
-      totalLosses:  (response['total_losses']  as int?) ?? 0,
+      totalWins: (response['total_wins'] as int?) ?? 0,
+      totalLosses: (response['total_losses'] as int?) ?? 0,
       totalMatches: (response['total_matches'] as int?) ?? 0,
-      totalDays:    (response['total_days']    as int?) ?? 1,
+      totalDays: (response['total_days'] as int?) ?? 1,
     );
   }
 }

@@ -1,7 +1,5 @@
-// ============================================================
 // lib/providers/auth_provider.dart
-// ============================================================
-//
+
 // PURPOSE:
 //   AuthProvider is the "brain" of authentication in this app.
 //   It sits between the UI screens and SupabaseService, managing:
@@ -9,37 +7,6 @@
 //     • Who the current user is (their username)
 //     • Performing all sign-up, login, logout, and password operations
 //     • Persisting login state to SharedPreferences for offline resilience
-//
-// DESIGN PATTERN — ChangeNotifier:
-//   This class extends ChangeNotifier (from Flutter's provider package).
-//   When auth state changes (login/logout), notifyListeners() is called,
-//   which triggers any widget listening via Provider.of<AuthProvider>()
-//   or context.watch<AuthProvider>() to rebuild automatically.
-//
-// NULL CONVENTION (important for understanding the code):
-//   Every public method returns:
-//     null   → Operation succeeded (caller should navigate / update UI)
-//     String → A human-readable error message to show to the user
-//   This pattern avoids throwing exceptions into the UI layer.
-//
-// WHY THIS FILE WAS CHANGED (for instructor):
-//   The original 'unexpected_failure' error was caused by the Supabase
-//   Dashboard having "Confirm email" ON but no working SMTP configured.
-//   However the provider also had a second issue: all non-AuthException
-//   errors were swallowed by a generic catch block that returned a fixed
-//   "unexpected_failure" string — hiding the REAL error from the developer.
-//
-//   This version:
-//     1. Prints the real exception to the debug console (debugPrint).
-//     2. Returns the actual error text to the UI so it is visible on screen.
-//     3. Correctly interprets the 'OTP_REQUIRED' signal so the signup screen
-//        knows to reveal the 6-digit code input field.
-//
-// ============================================================
-
-// dart:async is needed for the Timer used in the OTP resend countdown.
-// (Note: the Timer lives in SignUpScreen; this file doesn't use it directly,
-//  but it's shown here for completeness of the import documentation.)
 
 // flutter/material.dart — needed for ChangeNotifier, debugPrint.
 import 'package:flutter/material.dart';
@@ -66,7 +33,6 @@ import '../services/level_unlock_service.dart';
 /// Widgets listen to this provider to know if the user is logged in,
 /// who they are, and whether the boot-time auth check has completed.
 class AuthProvider with ChangeNotifier {
-
   // ══════════════════════════════════════════════════════════════════════════
   // PUBLIC STATE FIELDS
   // ══════════════════════════════════════════════════════════════════════════
@@ -85,9 +51,9 @@ class AuthProvider with ChangeNotifier {
   bool _isReady = false;
 
   // Public getters — expose private state as read-only to the outside world.
-  String get username   => _username;
-  bool   get isLoggedIn => _isLoggedIn;
-  bool   get isReady    => _isReady;
+  String get username => _username;
+  bool get isLoggedIn => _isLoggedIn;
+  bool get isReady => _isReady;
 
   // ══════════════════════════════════════════════════════════════════════════
   // CONSTRUCTOR
@@ -172,8 +138,7 @@ class AuthProvider with ChangeNotifier {
   ///   real error. Now it returns e.toString() so the actual Supabase message
   ///   ("Error sending confirmation email") appears on screen. This told us
   ///   the problem was the Supabase SMTP config, not the Dart code.
-  Future<String?> signUp(
-      String email, String password, String username) async {
+  Future<String?> signUp(String email, String password, String username) async {
     try {
       // ── Client-side validation ─────────────────────────────────────────────
       // These checks run locally — no network request needed.
@@ -194,7 +159,7 @@ class AuthProvider with ChangeNotifier {
       // the fix — without emailRedirectTo, Supabase uses the wrong email
       // template and can fail with "unexpected_failure".
       final response = await SupabaseService.signUp(
-        email:    email,
+        email: email,
         password: password,
         username: username,
       );
@@ -229,29 +194,13 @@ class AuthProvider with ChangeNotifier {
       // This can happen if Auth is disabled in the project settings.
       return 'Sign up failed — no user returned. '
           'Check your Supabase project settings.';
-
     } on AuthException catch (e) {
       // AuthException is thrown by the Supabase SDK for known auth errors,
       // e.g. "User already registered", "Password too short", etc.
       // e.message is a human-readable string we can show directly.
       debugPrint('[AuthProvider] signUp AuthException: ${e.message}');
       return e.message;
-
     } catch (e, stack) {
-      // KEY FIX — this catch block previously returned a hardcoded
-      // 'Unexpected Failure' string, hiding the real error from the developer.
-      //
-      // Now it:
-      //   1. Prints the full error and stack trace to the debug console
-      //      so you can see it in Android Studio / VS Code output.
-      //   2. Returns the actual error text so it appears in the UI SnackBar.
-      //
-      // Common causes of errors landing here:
-      //   • "Error sending confirmation email" → Supabase SMTP not configured
-      //     → FIX: Disable "Confirm email" in Dashboard, or add custom SMTP
-      //   • SocketException → No internet connection on the device
-      //   • Invalid URL / anon key → Wrong values in main.dart Supabase.initialize()
-      //   • Project paused → Free-tier Supabase projects pause after 1 week idle
       debugPrint('[AuthProvider] signUp unexpected error: $e');
       debugPrint(stack.toString());
 
@@ -280,7 +229,7 @@ class AuthProvider with ChangeNotifier {
       final response = await SupabaseService.verifyOtp(
         email: email,
         token: token,
-        type:  OtpType.signup, // CRITICAL: must match the OTP type that was sent
+        type: OtpType.signup, // CRITICAL: must match the OTP type that was sent
       );
 
       if (response.user != null && response.session != null) {
@@ -291,7 +240,6 @@ class AuthProvider with ChangeNotifier {
 
       // Missing user or session after verifyOTP — code was wrong or expired.
       return 'Invalid or expired code. Please try again.';
-
     } on AuthException catch (e) {
       // Common AuthExceptions here:
       //   "Token has expired or is invalid" — code is wrong or >10 minutes old
@@ -423,7 +371,7 @@ class AuthProvider with ChangeNotifier {
       final response = await SupabaseService.verifyOtp(
         email: email,
         token: token,
-        type:  OtpType.recovery, // Different from OtpType.signup on purpose
+        type: OtpType.recovery, // Different from OtpType.signup on purpose
       );
       // Both must be present: user confirms identity, session grants update access
       return (response.user != null && response.session != null)
@@ -477,7 +425,7 @@ class AuthProvider with ChangeNotifier {
       await prefs.setBool(AppConstants.keyIsLoggedIn, false);
 
       // Reset in-memory state.
-      _username   = '';
+      _username = '';
       _isLoggedIn = false;
 
       // Tell all listening widgets to rebuild (e.g. HomeScreen, SplashScreen).
@@ -518,7 +466,7 @@ class AuthProvider with ChangeNotifier {
       final prefs = await SharedPreferences.getInstance();
       await prefs.remove(AppConstants.keyUsername);
       await prefs.setBool(AppConstants.keyIsLoggedIn, false);
-      _username   = '';
+      _username = '';
       _isLoggedIn = false;
       notifyListeners();
       return null; // null = success
@@ -549,7 +497,7 @@ class AuthProvider with ChangeNotifier {
     await LevelUnlockService.instance.resetProgress();
 
     final prefs = await SharedPreferences.getInstance();
-    _username   = username;
+    _username = username;
     _isLoggedIn = true;
     // Persist to disk so the user stays logged in across app restarts.
     await prefs.setString(AppConstants.keyUsername, _username);

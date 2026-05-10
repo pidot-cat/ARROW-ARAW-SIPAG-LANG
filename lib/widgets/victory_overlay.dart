@@ -1,12 +1,12 @@
-// ─────────────────────────────────────────────────────────────────────────────
 // lib/widgets/victory_overlay.dart
+
 // Semi-transparent overlay displayed when the player clears a level.
 // Shows the 'Victory' image, the player's score, and buttons for the next
 // level or the level-select screen.
-//
+
 // Works symmetrically with GameOverOverlay — both are Stack children managed
 // by the level base mixin, toggled via boolean state flags.
-// ─────────────────────────────────────────────────────────────────────────────
+
 import 'package:flutter/material.dart';
 import '../utils/app_colors.dart';
 import '../utils/constants.dart';
@@ -14,7 +14,7 @@ import '../utils/constants.dart';
 class VictoryOverlay extends StatelessWidget {
   final VoidCallback onNext;
   final VoidCallback onBack;
-  final bool isLastLevel; // ✅ NEW: true when player finishes Level 10
+  final bool isLastLevel; // NEW: true when player finishes Level 10
 
   const VictoryOverlay({
     super.key,

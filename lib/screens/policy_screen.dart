@@ -1,14 +1,7 @@
-// ─────────────────────────────────────────────────────────────────────────────
 // lib/screens/policy_screen.dart
+
 // Read-only scrollable screen that displays the app's Privacy Policy content.
 // StatelessWidget — no user interaction beyond scrolling and the back button.
-// ─────────────────────────────────────────────────────────────────────────────
-// lib/screens/policy_screen.dart
-// ─────────────────────────────────────────────────────────────────────────────
-// Privacy Policy Screen — static informational screen listing all data
-// collection and usage policies for Arrow Araw: Sipag Lang.
-// Read-only, no state required (StatelessWidget).
-// ─────────────────────────────────────────────────────────────────────────────
 
 import 'package:flutter/material.dart';
 import '../widgets/background_wrapper.dart';

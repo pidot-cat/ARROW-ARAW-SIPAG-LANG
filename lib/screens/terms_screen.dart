@@ -1,14 +1,8 @@
-// ─────────────────────────────────────────────────────────────────────────────
 // lib/screens/terms_screen.dart
-// Read-only scrollable screen that displays the app's Terms of Service content.
-// StatelessWidget — no user interaction beyond scrolling and the back button.
-// ─────────────────────────────────────────────────────────────────────────────
-// lib/screens/terms_screen.dart
-// ─────────────────────────────────────────────────────────────────────────────
+
 // Terms of Service Screen — static informational screen presenting the app's
 // usage terms, intellectual property notice, and contact information.
 // Read-only, no state required (StatelessWidget).
-// ─────────────────────────────────────────────────────────────────────────────
 
 import 'package:flutter/material.dart';
 import '../widgets/background_wrapper.dart';

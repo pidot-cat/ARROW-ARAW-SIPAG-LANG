@@ -1,10 +1,9 @@
 // lib/services/level_unlock_service.dart
-// ─────────────────────────────────────────────────────────────────────────────
+
 // Manages saving and loading the highest unlocked level.
 // Dual-storage: SharedPreferences (local, instant) + Supabase (remote, persistent
 // across devices / after logout).  The higher of the two values always wins so
 // offline progress is never lost.
-// ─────────────────────────────────────────────────────────────────────────────
 
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -139,18 +138,3 @@ class LevelUnlockService {
     await prefs.setInt(_kHighestLevel, 1);
   }
 }
-
-// ─────────────────────────────────────────────────────────────────────────────
-// LevelUnlockService — singleton that persists and retrieves the player's
-// highest unlocked level using a dual-storage strategy.
-//
-// Storage layers (higher value always wins):
-//   SharedPreferences — local, survives app restart, available offline.
-//   Supabase (level_progress table) — remote, survives reinstall and device
-//   switch.
-//
-// Key public API:
-//   instance.getHighestUnlockedLevel()   Returns the max of local + remote values.
-//   instance.saveHighestUnlockedLevel(n) Writes n to both storage layers only
-//                                        when n exceeds the current stored value.
-// ─────────────────────────────────────────────────────────────────────────────

@@ -1,24 +1,8 @@
-// ─────────────────────────────────────────────────────────────────────────────
 // lib/providers/game_provider.dart
+
 // ChangeNotifier that manages core game state for the legacy GameScreen.
 // Tracks [currentLevel], the list of active [ArrowModel] objects, the grid
 // size, remaining [lives], and the round timer.
-//
-// Each level screen uses its own LevelStateMixin for independent timer
-// management.  GameProvider's timer is retained for backward-compatibility
-// with the single legacy GameScreen route.
-//
-// Key methods:
-//   startLevel()  — initialises arrow grid and starts the countdown.
-//   stopLevel()   — cancels the timer; must be called before Navigator.pop()
-//                   to prevent a stale timer from firing audio callbacks.
-//   resetGame()   — resets lives and score without re-navigating.
-// ─────────────────────────────────────────────────────────────────────────────
-// lib/providers/game_provider.dart
-// FIX Bug 2: Added stopLevel() — call this before Navigator.pop() to prevent
-// the timer from firing playLoseSound() after the screen is gone.
-// Each level screen's LevelStateMixin manages its OWN timer. GameProvider's
-// timer is only used by the legacy GameScreen (kept for compatibility).
 
 import 'dart:async';
 import 'package:flutter/material.dart';
@@ -113,9 +97,6 @@ class GameProvider with ChangeNotifier {
     notifyListeners();
   }
 
-  // ── FIX Bug 2: stopLevel — cancel timer cleanly before Navigator.pop ──────
-  /// Call this whenever the player navigates away from a level (back button,
-  /// quit dialog, etc.) to prevent the timer from firing lose-sound after pop.
   void stopLevel() {
     _timer?.cancel();
     _timer = null;

@@ -1,22 +1,9 @@
-// ─────────────────────────────────────────────────────────────────────────────
 // lib/screens/game_screen.dart
+
 // Core gameplay screen for the legacy single-level entry point.
 // Renders the arrow grid using [GameProvider] state and handles tap input to
 // redirect arrows.  Victory and Game Over overlays are shown as Stack children
 // rather than full-screen navigation pushes to avoid rebuild flicker.
-// ─────────────────────────────────────────────────────────────────────────────
-// lib/screens/game_screen.dart
-// ─────────────────────────────────────────────────────────────────────────────
-// Game Screen — the classic (non-level-base) game screen used by GameProvider.
-// Renders the game grid, top-bar HUD, animated timer bar, settings overlay,
-// GameOver overlay, and Victory overlay.
-//
-// This screen reads its state entirely from GameProvider via Consumer<>.
-// Audio is managed locally via the AudioService singleton.
-//
-// NOTE: The newer level-based game flow (Levels 1–10) uses LevelBase instead.
-//       This screen is kept for the /game route (legacy entry point).
-// ─────────────────────────────────────────────────────────────────────────────
 
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -731,10 +718,10 @@ class _AnimatedArrowState extends State<_AnimatedArrow>
     int maxX = arrow.segments.map((s) => s.x).reduce((a, b) => a > b ? a : b);
     int maxY = arrow.segments.map((s) => s.y).reduce((a, b) => a > b ? a : b);
 
-    double width  = (maxX - minX + 1) * widget.cellSize;
+    double width = (maxX - minX + 1) * widget.cellSize;
     double height = (maxY - minY + 1) * widget.cellSize;
-    double left   = minX * widget.cellSize;
-    double top    = minY * widget.cellSize;
+    double left = minX * widget.cellSize;
+    double top = minY * widget.cellSize;
 
     // When the arrow is escaping (cleared), animate it flying off-screen
     if (arrow.isEscaping) {
@@ -870,11 +857,20 @@ class LongArrowPainter extends CustomPainter {
     // Rotation angle (radians) per direction
     double angle = 0;
     switch (direction) {
-      case ArrowDirection.up:    angle = 0;             break;
-      case ArrowDirection.right: angle = 3.14159 / 2;  break;
-      case ArrowDirection.down:  angle = 3.14159;       break;
-      case ArrowDirection.left:  angle = -3.14159 / 2; break;
-      case ArrowDirection.white: break; // no arrowhead
+      case ArrowDirection.up:
+        angle = 0;
+        break;
+      case ArrowDirection.right:
+        angle = 3.14159 / 2;
+        break;
+      case ArrowDirection.down:
+        angle = 3.14159;
+        break;
+      case ArrowDirection.left:
+        angle = -3.14159 / 2;
+        break;
+      case ArrowDirection.white:
+        break; // no arrowhead
     }
 
     if (direction != ArrowDirection.white) {

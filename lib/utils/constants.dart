@@ -1,7 +1,7 @@
-// ─────────────────────────────────────────────────────────────────────────────
 // lib/utils/constants.dart
+
 // App-wide compile-time constants grouped in the [AppConstants] class.
-//
+
 // Categories:
 //   Game configuration — grid size, initial lives, obstacle density.
 //   Animation durations — splash hold time, arrow move speed, game-over delay.
@@ -9,7 +9,7 @@
 //   Storage keys — SharedPreferences keys for persisting user and game state.
 //   Asset paths — canonical paths for all image and audio assets so no
 //                 screen needs to hard-code a string literal.
-// ─────────────────────────────────────────────────────────────────────────────
+
 class AppConstants {
   // Game Configuration
   static const int gridSize = 6;
@@ -47,7 +47,6 @@ class AppConstants {
   static const String heartBlack = 'assets/images/heart icon Black.png';
   static const String gameOver = 'assets/images/Game Over.png';
   static const String victory = 'assets/images/Victory.png';
-  // ✅ FIXED: Removed backButton asset constant — walang file, ginagamit na built-in icon
 
   // Asset Paths — Audio (all files live in assets/audio/)
   static const String soundArrow = 'assets/audio/Arrow-Sound.mp3';

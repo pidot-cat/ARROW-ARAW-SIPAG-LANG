@@ -1,16 +1,8 @@
-// ─────────────────────────────────────────────────────────────────────────────
 // lib/screens/settings_screen.dart
+
 // Allows the player to toggle background music and SFX on/off via
 // [AudioService], and change their display username stored in Supabase.
 // Settings are persisted immediately; no explicit Save button is required.
-// ─────────────────────────────────────────────────────────────────────────────
-// lib/screens/settings_screen.dart
-// ─────────────────────────────────────────────────────────────────────────────
-// Settings Screen — Ultra-Refined v2
-// Vibrant multi-color palette: Orange, Green, Purple accent tiles.
-// Dynamic glassmorphism design with neon glow accents.
-// ⚠️  Auth / Supabase / Navigation logic is UNCHANGED.
-// ─────────────────────────────────────────────────────────────────────────────
 
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -327,7 +319,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
               return Colors.grey.shade600;
             }),
             trackColor: WidgetStateProperty.resolveWith((states) {
-              if (states.contains(WidgetState.selected)) return theme.accent.withAlpha(80);
+              if (states.contains(WidgetState.selected)) {
+                return theme.accent.withAlpha(80);
+              }
               return Colors.grey.shade800;
             }),
           ),

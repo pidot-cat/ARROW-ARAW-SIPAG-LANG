@@ -1,19 +1,10 @@
-// ─────────────────────────────────────────────────────────────────────────────
 // lib/screens/forgot_password_screen.dart
-// Guides users through the Supabase OTP-based password-reset flow.
-// Step 1 — user enters their registered email; a reset OTP is sent by Supabase.
-// Step 2 — user enters the OTP and a new password pair to complete the reset.
-// Delegates to [AuthProvider] / [SupabaseService] for all Supabase calls.
-// ─────────────────────────────────────────────────────────────────────────────
-// lib/screens/forgot_password_screen.dart
+
 // 3-step password recovery flow:
 //   Step 1 — User enters email → we call Supabase to send a recovery OTP.
 //   Step 2 — User enters the 6-digit OTP → we verify it with Supabase.
 //   Step 3 — User sets a new password → we call Supabase updateUser().
 //             On success, navigate back to /login.
-//
-// UI FIX: New-password fields use GradientInputField (silver-grey + toggle)
-//         instead of hard-coded blue Containers, matching all other fields.
 
 import 'dart:async';
 import 'package:flutter/material.dart';
@@ -37,9 +28,9 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
   final _newPasswordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
 
-  int _step = 1;          // Current step: 1 = Email, 2 = OTP, 3 = New Password
+  int _step = 1; // Current step: 1 = Email, 2 = OTP, 3 = New Password
   bool _isLoading = false;
-  int _timerSeconds = 0;  // Countdown for the Resend option in Step 2
+  int _timerSeconds = 0; // Countdown for the Resend option in Step 2
   Timer? _countdownTimer;
   String _verifiedEmail = ''; // Stored after Step 1 for use in Step 2
 
@@ -115,10 +106,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
   }
 
   // ── Step 1: Send recovery OTP ──────────────────────────────────────────────
-  // FIX: Uses AuthProvider.sendPasswordReset() which calls
-  //      Supabase resetPasswordForEmail(). Supabase sends a 6-digit OTP
-  //      (not a magic link) when "OTP" is selected in the Auth email template.
-  //      The message is intentionally vague (Supabase anti-enumeration policy).
+
   Future<void> _handleSendCode() async {
     final email = _emailController.text.trim();
 
@@ -161,14 +149,12 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
   }
 
   // ── Step 2: Verify recovery OTP ────────────────────────────────────────────
-  // FIX: Calls AuthProvider.verifyRecoveryOtp() which uses
-  //      SupabaseService.verifyOtp(type: OtpType.recovery).
-  //      On success, Supabase creates a session so Step 3 can call updateUser().
   Future<void> _handleVerifyOtp() async {
     final code = _otpController.text.trim();
 
     if (code.isEmpty || code.length < 6) {
-      _showSnack('Please enter the full 6-digit code.', type: _SnackType.warning);
+      _showSnack('Please enter the full 6-digit code.',
+          type: _SnackType.warning);
       return;
     }
 
@@ -194,17 +180,14 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
   }
 
   // ── Step 3: Update password ────────────────────────────────────────────────
-  // FIX: Calls AuthProvider.updatePassword() → SupabaseService.updatePassword()
-  //      → Supabase updateUser(UserAttributes(password: newPassword)).
-  //      Requires an active recovery session (set in Step 2).
-  //      On success, signs out and redirects to /login.
   Future<void> _handleResetPassword() async {
     final newPassword = _newPasswordController.text;
     final confirmPassword = _confirmPasswordController.text;
 
     // Client-side validation before hitting Supabase
     if (newPassword.isEmpty || confirmPassword.isEmpty) {
-      _showSnack('Please fill in both password fields.', type: _SnackType.warning);
+      _showSnack('Please fill in both password fields.',
+          type: _SnackType.warning);
       return;
     }
     if (newPassword.length < 8) {
@@ -292,8 +275,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                 // Spinner or action button
                 _isLoading
                     ? const CircularProgressIndicator(
-                        valueColor:
-                            AlwaysStoppedAnimation<Color>(Colors.cyan))
+                        valueColor: AlwaysStoppedAnimation<Color>(Colors.cyan))
                     : GradientButton(
                         text: _buttonLabel(), onPressed: _onButtonPressed()),
 
@@ -356,8 +338,9 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                 ? 'Resend code in ${_timerSeconds}s'
                 : "Didn't receive a code? Resend",
             style: TextStyle(
-                color:
-                    _timerSeconds > 0 ? Colors.white.withAlpha(100) : Colors.cyan,
+                color: _timerSeconds > 0
+                    ? Colors.white.withAlpha(100)
+                    : Colors.cyan,
                 fontSize: 13,
                 fontWeight: FontWeight.w600),
           ),
@@ -372,16 +355,16 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
           hintText: 'New Password (min 8 chars)',
           controller: _newPasswordController,
           prefixIcon: Icons.lock,
-          obscureText: true,  // starts hidden
-          showToggle: true,   // eye icon to reveal/hide
+          obscureText: true, // starts hidden
+          showToggle: true, // eye icon to reveal/hide
         ),
         SizedBox(height: size.height * 0.011),
         GradientInputField(
           hintText: 'Confirm New Password',
           controller: _confirmPasswordController,
           prefixIcon: Icons.lock_outline,
-          obscureText: true,  // starts hidden
-          showToggle: true,   // eye icon to reveal/hide
+          obscureText: true, // starts hidden
+          showToggle: true, // eye icon to reveal/hide
         ),
       ]);
 
@@ -413,10 +396,14 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
 
   String _stepTitle() {
     switch (_step) {
-      case 1:  return 'Forgot Password';
-      case 2:  return 'Check Your Email';
-      case 3:  return 'Create New Password';
-      default: return '';
+      case 1:
+        return 'Forgot Password';
+      case 2:
+        return 'Check Your Email';
+      case 3:
+        return 'Create New Password';
+      default:
+        return '';
     }
   }
 
@@ -435,19 +422,27 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
 
   String _buttonLabel() {
     switch (_step) {
-      case 1:  return 'SEND CODE';
-      case 2:  return 'VERIFY CODE';
-      case 3:  return 'SAVE PASSWORD';
-      default: return '';
+      case 1:
+        return 'SEND CODE';
+      case 2:
+        return 'VERIFY CODE';
+      case 3:
+        return 'SAVE PASSWORD';
+      default:
+        return '';
     }
   }
 
   VoidCallback _onButtonPressed() {
     switch (_step) {
-      case 1:  return _handleSendCode;
-      case 2:  return _handleVerifyOtp;
-      case 3:  return _handleResetPassword;
-      default: return () {};
+      case 1:
+        return _handleSendCode;
+      case 2:
+        return _handleVerifyOtp;
+      case 3:
+        return _handleResetPassword;
+      default:
+        return () {};
     }
   }
 }

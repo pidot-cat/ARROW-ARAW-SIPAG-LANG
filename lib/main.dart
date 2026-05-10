@@ -1,17 +1,19 @@
-// ─────────────────────────────────────────────────────────────────────────────
 // lib/main.dart
+
 // Application entry point for Arrow Araw Sipag Lang.
-//
+
 // Responsibilities:
 //   • Bootstraps the Supabase client before the widget tree is mounted.
 //   • Locks the device orientation to portrait mode.
 //   • Attaches the AudioService lifecycle observer so music stops when the app
 //     is backgrounded or closed.
-//   • Wraps the app in MultiProvider, registering GameProvider and AuthProvider
-//     so all descendant widgets can access game and auth state.
+//   • Wraps the app in MultiProvider, registering GameProvider, AuthProvider,
+//     and ConnectivityProvider so all descendant widgets can access game,
+//     auth, and connectivity state.
 //   • Defines the global MaterialApp theme (dark background, white text,
 //     Roboto font) and the named route table.
-// ─────────────────────────────────────────────────────────────────────────────
+//   • Uses MaterialApp's [builder] to inject ConnectivityWrapper around every
+//     route automatically — no per-screen changes needed.
 
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -28,6 +30,8 @@ import 'screens/policy_screen.dart';
 import 'screens/about_screen.dart';
 import 'providers/game_provider.dart';
 import 'providers/auth_provider.dart';
+import 'providers/connectivity_provider.dart';
+import 'widgets/connectivity_wrapper.dart';
 import 'utils/app_colors.dart';
 import 'services/audio_service.dart';
 import 'package:flutter/services.dart';
@@ -46,7 +50,7 @@ void main() async {
     DeviceOrientation.portraitDown,
   ]);
 
-  // [FIX B] Attach lifecycle observer — hard-stops all audio on minimize/exit
+  // Attach lifecycle observer — hard-stops all audio on minimize/exit
   AudioService().attachLifecycleObserver();
 
   runApp(const ArrowArawSipagLang());
@@ -61,6 +65,9 @@ class ArrowArawSipagLang extends StatelessWidget {
       providers: [
         ChangeNotifierProvider(create: (_) => GameProvider()),
         ChangeNotifierProvider(create: (_) => AuthProvider()),
+        // ConnectivityProvider — monitors internet status app-wide.
+        // Registered here so every screen can read it via context.watch/read.
+        ChangeNotifierProvider(create: (_) => ConnectivityProvider()),
       ],
       child: MaterialApp(
         title: 'Arrow Araw Sipag Lang',
@@ -70,23 +77,34 @@ class ArrowArawSipagLang extends StatelessWidget {
           scaffoldBackgroundColor: AppColors.backgroundDark,
           fontFamily: 'Roboto',
           textTheme: const TextTheme(
-            bodyLarge:  TextStyle(color: Colors.white),
+            bodyLarge: TextStyle(color: Colors.white),
             bodyMedium: TextStyle(color: Colors.white),
           ),
         ),
+        // ── ConnectivityWrapper injected globally via builder ──────────────
+        // MaterialApp.builder() wraps the entire Navigator/route stack.
+        // ConnectivityWrapper watches ConnectivityProvider and:
+        //   • Shows a persistent offline SnackBar on any screen.
+        //   • Shows a "back online" SnackBar when connection is restored.
+        //   • Renders a full-screen blocking overlay while offline so
+        //     buttons and inputs can't be interacted with.
+        // Using builder here means zero changes are needed in any screen file.
+        builder: (context, child) => ConnectivityWrapper(
+          child: child ?? const SizedBox.shrink(),
+        ),
         initialRoute: '/',
         routes: {
-          '/':                (context) => const SplashScreen(),
-          '/login':           (context) => const LoginScreen(),
-          '/signup':          (context) => const SignUpScreen(),
+          '/': (context) => const SplashScreen(),
+          '/login': (context) => const LoginScreen(),
+          '/signup': (context) => const SignUpScreen(),
           '/forgot-password': (context) => const ForgotPasswordScreen(),
-          '/home':            (context) => const HomeScreen(),
-          '/records':         (context) => const RecordsScreen(),
-          '/settings':        (context) => const SettingsScreen(),
-          '/contact':         (context) => const ContactScreen(),
-          '/terms':           (context) => const TermsScreen(),
-          '/policy':          (context) => const PolicyScreen(),
-          '/about':           (context) => const AboutScreen(),
+          '/home': (context) => const HomeScreen(),
+          '/records': (context) => const RecordsScreen(),
+          '/settings': (context) => const SettingsScreen(),
+          '/contact': (context) => const ContactScreen(),
+          '/terms': (context) => const TermsScreen(),
+          '/policy': (context) => const PolicyScreen(),
+          '/about': (context) => const AboutScreen(),
         },
       ),
     );

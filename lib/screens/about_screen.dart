@@ -1,9 +1,8 @@
 // lib/screens/about_screen.dart
-// ─────────────────────────────────────────────────────────────────────────────
+
 // About Us Screen — displays mission statement, game concept, development
 // team, and technology info in a scrollable card layout with the app logo.
 // Read-only, no state management required (StatelessWidget).
-// ─────────────────────────────────────────────────────────────────────────────
 
 import 'package:flutter/material.dart';
 import '../widgets/background_wrapper.dart';

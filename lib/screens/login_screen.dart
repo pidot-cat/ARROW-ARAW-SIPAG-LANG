@@ -1,13 +1,8 @@
-// ─────────────────────────────────────────────────────────────────────────────
 // lib/screens/login_screen.dart
+
 // Authenticates an existing user via email and password using Supabase Auth.
 // Delegates the sign-in call to [AuthProvider.signIn()] and navigates to
 // HomeScreen on success, or displays an inline error message on failure.
-// ─────────────────────────────────────────────────────────────────────────────
-// lib/screens/login_screen.dart
-// Login screen — validates email/password then calls AuthProvider.login().
-// UI FIX: Password field now uses GradientInputField with showToggle:true
-//         so it has the same silver-grey background as the Email field.
 
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -158,8 +153,8 @@ class _LoginScreenState extends State<LoginScreen> {
                   hintText: 'Password',
                   controller: _passwordController,
                   prefixIcon: Icons.lock,
-                  obscureText: true,    // starts hidden
-                  showToggle: true,     // eye icon to reveal/hide
+                  obscureText: true, // starts hidden
+                  showToggle: true, // eye icon to reveal/hide
                 ),
 
                 // Forgot password link
@@ -168,8 +163,8 @@ class _LoginScreenState extends State<LoginScreen> {
                   child: TextButton(
                     onPressed: _handleForgotPassword,
                     style: TextButton.styleFrom(
-                      padding:
-                          const EdgeInsets.symmetric(horizontal: 4, vertical: 6),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 4, vertical: 6),
                     ),
                     child: const Text(
                       'Forgot Password?',

@@ -1,26 +1,19 @@
-// ─────────────────────────────────────────────────────────────────────────────
 // lib/screens/splash_screen.dart
-// Animated launch screen shown for [AppConstants.splashDuration] on cold start.
-// Checks the Supabase session and SharedPreferences to determine whether the
-// user is already authenticated, then routes to HomeScreen or LoginScreen.
-// ─────────────────────────────────────────────────────────────────────────────
-// lib/screens/splash_screen.dart
-// ─────────────────────────────────────────────────────────────────────────────
+
 // Splash Screen — launch screen with mandatory internet connectivity check.
-//
+
 // Navigation rules:
 //   • Online + logged-in      → /home  (skip login entirely)
 //   • Online + not logged-in  → /login
 //   • Offline (any state)     → stay on splash with a persistent SnackBar
 //                               and poll every 3 s until connection returns
-//
+
 // The app blocks ALL navigation while offline — even previously authenticated
 // users cannot proceed. This ensures Supabase session validation always
 // has a working connection.
-//
+
 // Animation: logo fades in (Curves.easeIn) and scales up (Curves.elasticOut)
 // over 2 seconds, giving a polished first impression.
-// ─────────────────────────────────────────────────────────────────────────────
 
 import 'dart:async';
 import 'dart:io';
@@ -50,12 +43,12 @@ class _SplashScreenState extends State<SplashScreen>
     super.initState();
 
     // 2-second animation controller drives both fade and scale
-    _controller = AnimationController(
-        duration: const Duration(seconds: 2), vsync: this);
+    _controller =
+        AnimationController(duration: const Duration(seconds: 2), vsync: this);
 
     // Simple ease-in fade from transparent to fully opaque
-    _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
-        CurvedAnimation(parent: _controller, curve: Curves.easeIn));
+    _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0)
+        .animate(CurvedAnimation(parent: _controller, curve: Curves.easeIn));
 
     // Elastic scale-up from 50% to 100% for a "pop" entrance effect
     _scaleAnimation = Tween<double>(begin: 0.5, end: 1.0).animate(
@@ -139,7 +132,8 @@ class _SplashScreenState extends State<SplashScreen>
         ),
         backgroundColor: Colors.redAccent,
         behavior: SnackBarBehavior.floating,
-        duration: Duration(days: 1), // Stays up until dismissed programmatically
+        duration:
+            Duration(days: 1), // Stays up until dismissed programmatically
       ),
     );
   }
@@ -189,6 +183,7 @@ class _SplashScreenState extends State<SplashScreen>
         completer.complete();
       }
     }
+
     auth.addListener(listener);
     return completer.future;
   }
@@ -240,8 +235,7 @@ class _SplashScreenState extends State<SplashScreen>
                   height: 48,
                   child: CircularProgressIndicator(
                     strokeWidth: 3,
-                    valueColor:
-                        AlwaysStoppedAnimation<Color>(Colors.cyan),
+                    valueColor: AlwaysStoppedAnimation<Color>(Colors.cyan),
                   ),
                 ),
               ],

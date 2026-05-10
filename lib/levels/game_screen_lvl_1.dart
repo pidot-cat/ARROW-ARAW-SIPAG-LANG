@@ -1,5 +1,4 @@
 // lib/levels/game_screen_lvl_1.dart
-// Level 1 — 8×8 — 10 Arrows
 
 import 'package:flutter/material.dart';
 import '../utils/app_colors.dart';
@@ -25,16 +24,26 @@ class GameScreenLvl1 extends StatefulWidget {
   State<GameScreenLvl1> createState() => _State();
 }
 
-class _State extends State<GameScreenLvl1> with BentLevelStateMixin<GameScreenLvl1> {
-  @override int get levelNumber => 1;
-  @override int get rows => Level1Manager.rows;
-  @override int get cols => Level1Manager.cols;
-  @override int get arrowCount => 10;
-  @override List<BentArrowData> Function() get buildArrowsFn => Level1Manager.build;
-  @override Widget Function() get nextLevelBuilder => () => const GameScreenLvl2();
+class _State extends State<GameScreenLvl1>
+    with BentLevelStateMixin<GameScreenLvl1> {
+  @override
+  int get levelNumber => 1;
+  @override
+  int get rows => Level1Manager.rows;
+  @override
+  int get cols => Level1Manager.cols;
+  @override
+  int get arrowCount => 10;
+  @override
+  List<BentArrowData> Function() get buildArrowsFn => Level1Manager.build;
+  @override
+  Widget Function() get nextLevelBuilder => () => const GameScreenLvl2();
 
   @override
-  void initState() { super.initState(); initLevelState(); }
+  void initState() {
+    super.initState();
+    initLevelState();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -48,13 +57,15 @@ class _State extends State<GameScreenLvl1> with BentLevelStateMixin<GameScreenLv
     return Scaffold(
       backgroundColor: AppColors.darkNavy,
       body: Stack(children: [
-        SafeArea(child: Column(children: [
+        SafeArea(
+            child: Column(children: [
           buildHUD(),
           const SizedBox(height: 4),
           Expanded(child: Center(child: buildGrid(cellSize, shape))),
         ])),
         if (gameOver) GameOverOverlay(onRetry: restart, onBack: quit),
-        if (victory) VictoryOverlay(isLastLevel: false, onNext: goNextLevel, onBack: quit),
+        if (victory)
+          VictoryOverlay(isLastLevel: false, onNext: goNextLevel, onBack: quit),
       ]),
     );
   }

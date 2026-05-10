@@ -1,28 +1,4 @@
 // lib/services/audio_service.dart
-// ─────────────────────────────────────────────────────────────────────────────
-// Arrow Araw — AudioService v9  (PRODUCTION FINAL — Fix 5 Applied)
-//
-// FIX-3b v3 TOGGLE RESUME: toggleMusic() now uses plain resume() when toggling
-//         ON. The previous v2 implementation called seek(Duration.zero) before
-//         resume(), which restarted the track from second zero — the exact
-//         behaviour the bug report flagged. Removing seek() means the player
-//         resumes from the position it was paused at, delivering true seamless
-//         continuation. A catchError() fallback restarts the correct track if the
-//         OS killed the player session while it was paused.
-//
-// FIX-3c v2 LIFECYCLE: didChangeAppLifecycleState now pauses on 'inactive' state
-//         in addition to paused/detached/hidden — covers notification shade and
-//         incoming call overlay. Resume path adds .catchError() fallback: if the
-//         OS killed the AudioPlayer session while backgrounded, it force-restarts
-//         the correct track instead of silently failing.
-//
-// WIN-DEBOUNCE  playWinSound() guarded by _winSoundPlayed; reset by
-//               resetWinSoundGuard() from restart() / initLevelState().
-// LOBBY-MUSIC   playMenuMusic() early-return guard (no-op on second call).
-//               resumeMenuMusic() force-restarts regardless of guard.
-// FIX-A         startIdleResumeTimer() — 2s idle → resume game music.
-// FIX-C         SFX players are separate from _musicPlayer.
-// ─────────────────────────────────────────────────────────────────────────────
 
 import 'dart:async';
 import 'package:audioplayers/audioplayers.dart';
@@ -85,20 +61,12 @@ class AudioService with WidgetsBindingObserver {
         state == AppLifecycleState.detached ||
         state == AppLifecycleState.hidden ||
         state == AppLifecycleState.inactive) {
-      // FIX-3c v2: PAUSE on ALL non-foreground states including 'inactive'
-      // (notification shade, incoming call overlay, app switcher). This stops
-      // music leaking through OS interruptions while keeping _currentMusic
-      // intact so the correct track resumes when the user returns.
       _musicPlayer.pause();
       _sfxPlayer.stop();
       _wrongPlayer.stop();
       cancelIdleTimer();
     }
     if (state == AppLifecycleState.resumed && _isMusicOn) {
-      // FIX-3c v2: Try resume() first. On some Android devices the OS kills
-      // the AudioPlayer session while backgrounded. If resume() throws
-      // (stopped/disposed player), fall back to a full restart of whichever
-      // track was active before backgrounding — preserving music continuity.
       if (_currentMusic == 'menu' || _currentMusic == 'game') {
         _musicPlayer.resume().catchError((_) {
           final track = _currentMusic;
@@ -120,12 +88,6 @@ class AudioService with WidgetsBindingObserver {
       await _musicPlayer.pause();
     } else {
       if (_currentMusic == 'menu') {
-        // FIX-3b v3: Call resume() directly — no seek(). The previous v2
-        // implementation called seek(Duration.zero) before resume(), which
-        // restarted the lobby track from second zero on every toggle-ON.
-        // Plain resume() returns to the exact position the track was paused at,
-        // delivering true seamless continuation of the loop. If the player was
-        // stopped (OS killed the session), catchError restarts it from scratch.
         _musicPlayer.resume().catchError((_) {
           _currentMusic = '';
           playMenuMusic();
@@ -222,24 +184,3 @@ class AudioService with WidgetsBindingObserver {
     await resumeMenuMusic();
   }
 }
-
-// ─────────────────────────────────────────────────────────────────────────────
-// AudioService — singleton that centralises all audio playback for the app.
-//
-// Two logical audio channels:
-//   _musicPlayer — looping background tracks (lobby, in-game, win, lose).
-//   _sfxPlayer / _wrongPlayer — one-shot sound effects (arrow click, wrong move).
-//
-// Key public API:
-//   playMenuMusic()      Starts lobby background music; no-op if already playing.
-//   playGameMusic()      Crossfades to the in-game track.
-//   playWinSound()       Plays the win jingle (debounced — fires only once per round).
-//   playLoseSound()      Plays the lose jingle.
-//   playArrowSound()     Plays the arrow-placement click SFX.
-//   playWrongSound()     Plays the wrong-move SFX.
-//   toggleMusic()        Pauses or resumes background music; persists the
-//                        preference across sessions via SharedPreferences.
-//   toggleSfx()          Mutes or un-mutes SFX.
-//   attachLifecycleObserver()  Registers this service as a WidgetsBindingObserver
-//                              so music pauses when the app is backgrounded.
-// ─────────────────────────────────────────────────────────────────────────────

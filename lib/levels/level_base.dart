@@ -1,30 +1,4 @@
 // lib/levels/level_base.dart
-// ─────────────────────────────────────────────────────────────────────────────
-// Arrow Araw — Core Engine v12  (PRODUCTION FINAL — All Fixes Applied)
-//
-// FIX-1  HEAD-ALIGN: Shaft endpoint pulled back by halfCap so StrokeCap.round
-//        meets the arrowhead apex flush — no gap anywhere.
-// FIX-2  PERF-6: Adaptive animation durations for levels 5–10.
-//          L5–L7 (50–70 arrows): 280ms slide / 120ms fade delay / 300ms solve
-//          L8–L10 (80–100 arrows): 220ms slide / 90ms fade delay / 240ms solve
-// FIX-3  (Audio — see audio_service.dart and home_screen.dart)
-// FIX-4  PERF-7: Per-arrow debounce map replaces global 16ms gate.
-//        Rapid taps on DIFFERENT arrows all register correctly.
-// FIX-5  PERF-8: Exit animation extracted into _ArrowExitWidget, a dedicated
-//        StatefulWidget that owns its own AnimationController. This eliminates
-//        the flutter_animate Animate widget re-creation overhead on every tap
-//        and prevents parent setState() from interrupting in-flight animations
-//        on dense levels (L2–L10). Each arrow animates independently with zero
-//        coupling to sibling arrows — guarantees uniform 60fps exit on all levels.
-// FIX-6  PERF-9: Outer RepaintBoundary wraps the entire grid Stack. Parent
-//        setState() calls (timer ticks, HUD updates, life changes) no longer
-//        propagate repaints into the grid. Eliminates ~100 redundant paint
-//        evaluations/second on Level 10, which was the root cause of exit-
-//        animation jitter when the timer fired concurrently with an arrow burst.
-//
-// Retained from v10: PERF-1 (RepaintBoundary/arrow), PERF-2 (dot grid),
-//   PERF-3 (willChange), PERF-4 (shouldRepaint value-compare), WIN-1.
-// ─────────────────────────────────────────────────────────────────────────────
 
 import 'dart:async';
 import 'dart:math' as math;
@@ -133,10 +107,6 @@ mixin BentLevelStateMixin<T extends StatefulWidget> on State<T> {
   final AudioService _audio = AudioService();
   final Set<int> _pendingSolve = {};
 
-  // FIX-4 / PERF-7: Per-arrow debounce map.
-  // Each arrow tracks its own last-tap timestamp so rapid taps on DIFFERENT
-  // arrows all register. Only a double-tap on the SAME arrow within 16ms
-  // (one frame) is suppressed to prevent ghost life deductions.
   final Map<int, DateTime> _lastTapPerArrow = {};
 
   bool _debounceCheckArrow(int arrowId) {
@@ -575,12 +545,6 @@ mixin BentLevelStateMixin<T extends StatefulWidget> on State<T> {
 
         if (val == 0) return painter;
 
-        // FIX-5 / PERF-8: Dedicated StatefulWidget owns its AnimationController.
-        // Replaces flutter_animate's Animate widget, which re-created the entire
-        // widget subtree on every trigger — causing frame drops on dense levels
-        // (L2–L10) when multiple arrows are tapped rapidly. Each _ArrowExitWidget
-        // is fully self-contained: it starts instantly, never blocks sibling
-        // animations, and requires no parent setState() during playback.
         return _ArrowExitWidget(
           key: ValueKey('exit_${arrow.id}_$val'),
           escape: arrow.escape,
@@ -599,13 +563,6 @@ mixin BentLevelStateMixin<T extends StatefulWidget> on State<T> {
 }
 
 // ── _ArrowExitWidget ──────────────────────────────────────────────────────────
-// FIX-5 / PERF-8: Self-contained exit animation using an owned AnimationController.
-//
-// WHY: flutter_animate's Animate widget is declarative — it creates a new
-// animation subtree every time the widget is rebuilt. On dense levels (L2–L10),
-// rapid taps cause many Animate widgets to be mounted simultaneously in a single
-// frame, overwhelming Flutter's reconciler and producing lag/skipped exits.
-//
 // This widget is instantiated ONCE per tap (via ValueKey) and manages its own
 // AnimationController lifecycle. It starts the animation immediately in initState(),
 // requires zero parent setState() calls during playback, and disposes cleanly.
@@ -765,7 +722,6 @@ class _DotGridPainter extends CustomPainter {
 }
 
 // ── StraightArrowPainter ──────────────────────────────────────────────────────
-// FIX-1  HEAD-ALIGN: shaftTip offset so StrokeCap.round lands flush at apex.
 // PERF-4 shouldRepaint compares segs by value.
 
 class StraightArrowPainter extends CustomPainter {
@@ -817,11 +773,6 @@ class StraightArrowPainter extends CustomPainter {
     final tail = _centre(tailSeg);
     final tip = _outerEdgeTip(headSeg); // apex — also passed to _drawHead
 
-    // FIX-1 / HEAD-ALIGN:
-    // StrokeCap.round extends painted length by halfStroke beyond the
-    // endpoint. Without correction this overlaps the arrowhead triangle,
-    // creating a visible gap at the apex. Pull the shaft endpoint back so
-    // the cap's leading edge lands exactly at `tip`.
     const double shaftStroke = 3.5;
     const double halfCap = shaftStroke / 2.0;
     final (dirX, dirY) = switch (escape) {

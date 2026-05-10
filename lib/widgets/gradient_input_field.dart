@@ -1,8 +1,8 @@
-// ─────────────────────────────────────────────────────────────────────────────
 // lib/widgets/gradient_input_field.dart
+
 // Themed text-input widget used across all form screens (login, sign-up,
 // contact, forgot-password).
-//
+
 // Features:
 //   • Cyan gradient border that intensifies on focus.
 //   • Optional leading icon (prefixIcon) for semantic context.
@@ -11,9 +11,6 @@
 //     (used for the locked account-email badge on ContactScreen).
 //   • maxLines support — expands to a textarea for multi-line inputs such as
 //     the message body on ContactScreen.
-// ─────────────────────────────────────────────────────────────────────────────
-// lib/widgets/gradient_input_field.dart
-// [FIX 5A] Added readOnly parameter — locks the email field in ContactScreen.
 
 import 'package:flutter/material.dart';
 import '../utils/app_colors.dart';
@@ -27,19 +24,19 @@ class GradientInputField extends StatefulWidget {
   final TextInputType? keyboardType;
   final int maxLines;
   final bool enabled;
-  final bool readOnly; // [FIX 5A] NEW
+  final bool readOnly;
 
   const GradientInputField({
     super.key,
     required this.hintText,
     required this.controller,
-    this.obscureText  = false,
-    this.showToggle   = false,
+    this.obscureText = false,
+    this.showToggle = false,
     this.prefixIcon,
     this.keyboardType,
-    this.maxLines     = 1,
-    this.enabled      = true,
-    this.readOnly     = false, // [FIX 5A]
+    this.maxLines = 1,
+    this.enabled = true,
+    this.readOnly = false,
   });
 
   @override
@@ -66,17 +63,18 @@ class _GradientInputFieldState extends State<GradientInputField> {
           boxShadow: [
             BoxShadow(
               color: AppColors.secondaryDark.withAlpha((0.5 * 255).toInt()),
-              blurRadius: 6, offset: const Offset(0, 3),
+              blurRadius: 6,
+              offset: const Offset(0, 3),
             ),
           ],
         ),
         child: TextField(
-          controller:   widget.controller,
-          obscureText:  _obscure,
+          controller: widget.controller,
+          obscureText: _obscure,
           keyboardType: widget.keyboardType,
-          maxLines:     widget.maxLines,
-          enabled:      widget.enabled,
-          readOnly:     widget.readOnly, // [FIX 5A]
+          maxLines: widget.maxLines,
+          enabled: widget.enabled,
+          readOnly: widget.readOnly, // [FIX 5A]
           style: const TextStyle(color: Colors.white, fontSize: 16),
           decoration: InputDecoration(
             hintText: widget.hintText,
@@ -93,8 +91,8 @@ class _GradientInputFieldState extends State<GradientInputField> {
                 : widget.showToggle
                     ? IconButton(
                         icon: Icon(
-                          _obscure ? Icons.visibility_off : Icons.visibility,
-                          color: AppColors.textGrey),
+                            _obscure ? Icons.visibility_off : Icons.visibility,
+                            color: AppColors.textGrey),
                         onPressed: () => setState(() => _obscure = !_obscure))
                     : null,
             border: OutlineInputBorder(
