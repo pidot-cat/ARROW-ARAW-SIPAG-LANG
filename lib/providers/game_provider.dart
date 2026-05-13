@@ -116,7 +116,7 @@ class GameProvider with ChangeNotifier {
     _authStateSubscription =
         Supabase.instance.client.auth.onAuthStateChange.listen(
       (AuthState authState) {
-        final currentUserId = authState.session?.user?.id;
+        final currentUserId = authState.session?.user.id;
 
         // Check if the user actually changed (not just token refresh)
         if (_lastKnownUserId != currentUserId) {
