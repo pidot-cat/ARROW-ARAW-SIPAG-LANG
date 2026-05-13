@@ -30,12 +30,27 @@ class LevelUnlockService {
   /// Reads both local and remote values and returns the greater one so that
   /// progress survived offline play is never overwritten.
   Future<int> loadHighestUnlocked() async {
-    // Read local value first (fast, no network required)
-    final prefs = await SharedPreferences.getInstance();
-    final localLevel = prefs.getInt(_kHighestLevel) ?? 1;
+    // ── BUG FIX: Account Isolation for Level Progress ────────────────────────
+    // Old behaviour: local (SharedPreferences) and remote (Supabase) values
+    // were compared and the HIGHER one was used. This caused a newly registered
+    // account on the same device to inherit the previous account's unlock
+    // progress — because:
+    //   a) The old account's SharedPreferences cache was NOT wiped per-user.
+    //   b) If the old account had a Supabase row with level > 1, that remote
+    //      value would "win" and overwrite the new user's correct starting
+    //      value of 1.
+    //
+    // New behaviour — Supabase is the ONLY source of truth (same pattern as
+    // GameProvider._loadStats fix):
+    //   1. Fetch the current user's OWN row from Supabase.
+    //   2. If the row exists → use that value (returning user, correct progress).
+    //   3. If no row exists  → return 1 (brand-new user, Level 1 only unlocked).
+    //   4. If network fails  → fall back to local cache (offline resilience).
+    // The "higher value wins" logic is REMOVED — it was the root cause of
+    // progress bleeding between accounts on the same device.
 
-    // Try to read the remote value; fall back to local if network is unavailable
-    int remoteLevel = 1;
+    final prefs = await SharedPreferences.getInstance();
+
     try {
       final user = _client.auth.currentUser;
       if (user != null) {
@@ -44,21 +59,36 @@ class LevelUnlockService {
             .select('highest_unlocked_level')
             .eq('user_id', user.id)
             .maybeSingle();
+
         if (row != null) {
-          remoteLevel = (row['highest_unlocked_level'] as int?) ?? 1;
+          // Returning user — use their real Supabase value
+          final remoteLevel = (row['highest_unlocked_level'] as int?) ?? 1;
+          // Sync local cache to match Supabase (so offline play is consistent)
+          await prefs.setInt(_kHighestLevel, remoteLevel);
+          return remoteLevel;
+        } else {
+          // Brand-new user — no Supabase row yet.
+          // Initialise the row with Level 1 so future loads are consistent.
+          await _client.from(_kTable).upsert(
+            {
+              'user_id': user.id,
+              'highest_unlocked_level': 1,
+              'updated_at': DateTime.now().toIso8601String(),
+            },
+            onConflict: 'user_id',
+          );
+          // Reset local cache to 1 as well — critical so no old account value leaks
+          await prefs.setInt(_kHighestLevel, 1);
+          return 1;
         }
       }
     } catch (e) {
-      // Network or Supabase error — use local value only
+      // Network unavailable — fall back to local cache as last resort
       debugPrint('[LevelUnlockService] loadHighestUnlocked remote error: $e');
     }
 
-    // The greater value wins (progress may have come from another device)
-    final best = localLevel > remoteLevel ? localLevel : remoteLevel;
-
-    // Sync local cache with the best value
-    await prefs.setInt(_kHighestLevel, best);
-    return best;
+    // Offline fallback: use local cache (defaults to 1 for new users)
+    return prefs.getInt(_kHighestLevel) ?? 1;
   }
 
   // ── Save ───────────────────────────────────────────────────────────────────
@@ -135,6 +165,7 @@ class LevelUnlockService {
   /// SupabaseService.deleteAccount() for the deletion case.
   Future<void> resetProgress() async {
     final prefs = await SharedPreferences.getInstance();
+
     await prefs.setInt(_kHighestLevel, 1);
   }
 }
