@@ -8,6 +8,7 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import '../models/arrow_model.dart';
 import '../models/game_stats_model.dart';
 import '../services/audio_service.dart';
@@ -45,8 +46,20 @@ class GameProvider with ChangeNotifier {
   Timer? _timer;
   final AudioService _audioService = AudioService();
 
+  // ════════════════════════════════════════════════════════════════════════════════
+  // AUTH STATE LISTENER — Auto-refresh on account switch
+  // ════════════════════════════════════════════════════════════════════════════════
+
+  /// Listens to Supabase auth state changes to automatically refresh data
+  /// when users switch accounts on the same device.
+  StreamSubscription<AuthState>? _authStateSubscription;
+
+  /// Tracks the current user ID to detect account switches.
+  String? _lastKnownUserId;
+
   GameProvider() {
     _loadStats();
+    _setupAuthStateListener();
   }
 
   Future<void> _loadStats() async {
@@ -81,13 +94,44 @@ class GameProvider with ChangeNotifier {
       debugPrint('Error syncing stats from Supabase: $e');
       final prefs = await SharedPreferences.getInstance();
       _stats = GameStatsModel(
-        totalWins:    prefs.getInt(AppConstants.keyTotalWins)    ?? 0,
-        totalLosses:  prefs.getInt(AppConstants.keyTotalLosses)  ?? 0,
+        totalWins: prefs.getInt(AppConstants.keyTotalWins) ?? 0,
+        totalLosses: prefs.getInt(AppConstants.keyTotalLosses) ?? 0,
         totalMatches: prefs.getInt(AppConstants.keyTotalMatches) ?? 0,
-        totalDays:    prefs.getInt(AppConstants.keyTotalDays)    ?? 1,
+        totalDays: prefs.getInt(AppConstants.keyTotalDays) ?? 1,
       );
     }
     notifyListeners();
+  }
+
+  /// Sets up a listener for Supabase auth state changes.
+  /// Automatically refreshes game stats when users switch accounts.
+  void _setupAuthStateListener() {
+    // Cancel any existing subscription to prevent duplicates
+    _authStateSubscription?.cancel();
+
+    // Get the current user ID for comparison
+    _lastKnownUserId = SupabaseService.currentUser?.id;
+
+    // Listen to auth state changes
+    _authStateSubscription =
+        Supabase.instance.client.auth.onAuthStateChange.listen(
+      (AuthState authState) {
+        final currentUserId = authState.session?.user?.id;
+
+        // Check if the user actually changed (not just token refresh)
+        if (_lastKnownUserId != currentUserId) {
+          debugPrint(
+              '[GameProvider] User changed: $_lastKnownUserId → $currentUserId');
+
+          // User switched accounts or logged out → refresh all data
+          _lastKnownUserId = currentUserId;
+          refreshStats();
+        }
+      },
+      onError: (error) {
+        debugPrint('[GameProvider] Auth state listener error: $error');
+      },
+    );
   }
 
   Future<void> _saveStats() async {
@@ -275,6 +319,7 @@ class GameProvider with ChangeNotifier {
 
   @override
   void dispose() {
+    _authStateSubscription?.cancel();
     _timer?.cancel();
     super.dispose();
   }
