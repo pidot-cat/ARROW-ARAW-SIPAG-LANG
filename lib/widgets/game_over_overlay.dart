@@ -54,11 +54,14 @@ class GameOverOverlay extends StatelessWidget {
                 ),
               ),
               SizedBox(height: screenHeight * 0.01),
-              Text(
-                'Try again to clear the path!',
-                style: TextStyle(
-                  fontSize: screenWidth * 0.04,
-                  color: Colors.white.withAlpha(160),
+              FittedBox(
+                fit: BoxFit.scaleDown,
+                child: Text(
+                  'Try again Boy!',
+                  style: TextStyle(
+                    fontSize: screenWidth * 0.04,
+                    color: Colors.white.withAlpha(160),
+                  ),
                 ),
               ),
               SizedBox(height: screenHeight * 0.05),

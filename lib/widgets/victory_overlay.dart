@@ -14,7 +14,7 @@ import '../utils/constants.dart';
 class VictoryOverlay extends StatelessWidget {
   final VoidCallback onNext;
   final VoidCallback onBack;
-  final bool isLastLevel; // NEW: true when player finishes Level 10
+  final bool isLastLevel; // true when player finishes Level 10
 
   const VictoryOverlay({
     super.key,
@@ -57,17 +57,20 @@ class VictoryOverlay extends StatelessWidget {
                 ),
               ),
               SizedBox(height: screenHeight * 0.01),
-              Text(
-                isLastLevel
-                    ? 'You completed all levels! Amazing!'
-                    : 'Congratulations! You cleared the path!',
-                style: TextStyle(
-                  fontSize: screenWidth * 0.038,
-                  color: Colors.white.withAlpha(160),
+              FittedBox(
+                fit: BoxFit.scaleDown,
+                child: Text(
+                  isLastLevel
+                      ? 'You completed all levels! Amazing!'
+                      : 'Congratulation Boy!',
+                  style: TextStyle(
+                    fontSize: screenWidth * 0.038,
+                    color: Colors.white.withAlpha(160),
+                  ),
                 ),
               ),
               SizedBox(height: screenHeight * 0.05),
-              // ✅ Show NEXT LEVEL only when there are more levels; otherwise show BACK TO MENU
+              // Show NEXT LEVEL only when there are more levels; otherwise BACK TO MENU
               if (!isLastLevel)
                 ElevatedButton.icon(
                   onPressed: onNext,
@@ -117,7 +120,7 @@ class VictoryOverlay extends StatelessWidget {
                   ),
                 ),
               SizedBox(height: screenHeight * 0.02),
-              // ✅ Only show secondary BACK button when not on last level
+              // Only show secondary BACK button when not on last level
               if (!isLastLevel)
                 TextButton.icon(
                   onPressed: onBack,

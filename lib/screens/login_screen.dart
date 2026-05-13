@@ -7,6 +7,8 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/auth_provider.dart';
+import '../providers/game_provider.dart';
+import '../services/level_unlock_service.dart';
 import '../widgets/background_wrapper.dart';
 import '../widgets/gradient_button.dart';
 import '../widgets/gradient_input_field.dart';
@@ -67,6 +69,11 @@ class _LoginScreenState extends State<LoginScreen> {
     setState(() => _isLoading = false);
 
     if (result == null) {
+      if (mounted) {
+        context.read<GameProvider>().refreshStats();
+        await LevelUnlockService.instance.resetProgress();
+      }
+      if (!mounted) return;
       // null = success → go to home
       Navigator.pushReplacementNamed(context, '/home');
     } else if (result == 'EMAIL_NOT_CONFIRMED') {
@@ -127,8 +134,9 @@ class _LoginScreenState extends State<LoginScreen> {
                   ),
                 ),
                 SizedBox(height: size.height * 0.006),
+                // ── FIX: UI Text Update — puzzle theme ──────────────────────
                 Text(
-                  'Login to continue your adventure',
+                  'Login and solve the puzzle!',
                   style: TextStyle(
                     color: Colors.white.withAlpha(128),
                     fontSize: size.width * 0.038,
@@ -146,15 +154,12 @@ class _LoginScreenState extends State<LoginScreen> {
                 SizedBox(height: size.height * 0.022),
 
                 // ── Password field ───────────────────────────────────────────
-                // UI FIX: Uses GradientInputField (silver-grey) instead of a
-                // hard-coded blue Container, matching the Email field above.
-                // showToggle:true adds the eye icon for show/hide password.
                 GradientInputField(
                   hintText: 'Password',
                   controller: _passwordController,
                   prefixIcon: Icons.lock,
-                  obscureText: true, // starts hidden
-                  showToggle: true, // eye icon to reveal/hide
+                  obscureText: true,
+                  showToggle: true,
                 ),
 
                 // Forgot password link
