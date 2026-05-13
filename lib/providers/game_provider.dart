@@ -290,8 +290,18 @@ class GameProvider with ChangeNotifier {
     notifyListeners();
   }
 
+  // Clears the current in-memory stats immediately.
+  // Used when the authenticated user changes to prevent stale UI values.
+  void clearStats() {
+    _stats = GameStatsModel();
+    notifyListeners();
+  }
+
   // Refreshes stats from Supabase (updates local cache too).
-  Future<void> refreshStats() async => await _loadStats();
+  Future<void> refreshStats() async {
+    clearStats();
+    await _loadStats();
+  }
 
   void nextLevel() {
     if (_currentLevel < 10) initLevel(_currentLevel + 1);
