@@ -86,7 +86,8 @@ class _RecordsScreenState extends State<RecordsScreen> {
                       crossAxisCount: 2,
                       crossAxisSpacing: 14,
                       mainAxisSpacing: 14,
-                      childAspectRatio: 1.35,
+                      childAspectRatio:
+                          1.5, // Increased from 1.35 to provide more vertical space
                       shrinkWrap: true,
                       physics: const NeverScrollableScrollPhysics(),
                       children: [
@@ -218,13 +219,16 @@ class _RecordsScreenState extends State<RecordsScreen> {
                     ),
                   ),
                   const SizedBox(height: 2),
-                  Text(
-                    value,
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 26,
-                      fontWeight: FontWeight.bold,
-                      height: 1.1,
+                  FittedBox(
+                    fit: BoxFit.scaleDown,
+                    child: Text(
+                      value,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 26,
+                        fontWeight: FontWeight.bold,
+                        height: 1.1,
+                      ),
                     ),
                   ),
                 ],
