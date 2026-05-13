@@ -18,9 +18,17 @@ class _RecordsScreenState extends State<RecordsScreen> {
   void initState() {
     super.initState();
     // Refresh stats from Supabase every time this screen opens.
-    // This guarantees the correct user's data is shown after an account switch.
+    // PostFrameCallback ensures the widget tree is built before we call into
+    // the provider, and we guard on statsLoading to avoid a double-fetch if
+    // the auth state listener already triggered one.
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      context.read<GameProvider>().refreshStats();
+      if (!mounted) return;
+      final gp = context.read<GameProvider>();
+      // Only refresh if we're not already loading — prevents stomping on a
+      // fetch that the auth state listener already started right after login.
+      if (!gp.statsLoading) {
+        gp.refreshStats();
+      }
     });
   }
 

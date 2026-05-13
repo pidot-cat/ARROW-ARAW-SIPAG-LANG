@@ -119,22 +119,28 @@ class GameProvider with ChangeNotifier {
     _authStateSubscription =
         Supabase.instance.client.auth.onAuthStateChange.listen(
       (AuthState authState) {
+        final event = authState.event;
         final currentUserId = authState.session?.user.id;
 
-        if (_lastKnownUserId != currentUserId) {
-          debugPrint(
-              '[GameProvider] User changed: $_lastKnownUserId → $currentUserId');
-          _lastKnownUserId = currentUserId;
+        debugPrint('[GameProvider] Auth event: $event, userId: $currentUserId');
 
-          if (currentUserId == null) {
-            // User logged out — clear stats immediately so the next
-            // account never sees stale data on the Records screen.
-            clearStats();
-          } else {
-            // New user logged in — fetch their stats from Supabase.
+        // Only react to actual user changes, not token refreshes or
+        // initial session restorations (which fire on app boot even if
+        // the same user is already logged in).
+        if (event == AuthChangeEvent.signedIn) {
+          if (_lastKnownUserId != currentUserId) {
+            debugPrint(
+                '[GameProvider] New sign-in detected: $_lastKnownUserId → $currentUserId');
+            _lastKnownUserId = currentUserId;
             refreshStats();
           }
+          // Same user re-authenticated (e.g. token refresh) — do nothing.
+        } else if (event == AuthChangeEvent.signedOut) {
+          debugPrint('[GameProvider] Sign-out detected, clearing stats.');
+          _lastKnownUserId = null;
+          clearStats();
         }
+        // Ignore: tokenRefreshed, userUpdated, passwordRecovery, etc.
       },
       onError: (error) {
         debugPrint('[GameProvider] Auth state listener error: $error');
@@ -212,6 +218,7 @@ class GameProvider with ChangeNotifier {
   void _handleTimerGameOver() {
     _timer?.cancel();
     _isGameOver = true;
+    // NOTE: addLoss() is called here ONLY — do not call recordLevelLoss() too
     _stats.addLoss();
     _saveStats();
     _audioService.playLoseSound();
@@ -279,6 +286,7 @@ class GameProvider with ChangeNotifier {
   void _handleLivesGameOver() {
     _timer?.cancel();
     _isGameOver = true;
+    // NOTE: addLoss() is called here ONLY — do not call recordLevelLoss() too
     _stats.addLoss();
     _saveStats();
     _audioService.playLoseSound();
@@ -289,6 +297,7 @@ class GameProvider with ChangeNotifier {
     if (_arrows.every((a) => a.isRemoved)) {
       _timer?.cancel();
       _isLevelWon = true;
+      // NOTE: addWin() is called here ONLY — do not call recordLevelComplete() too
       _stats.addWin();
       _saveStats();
       _audioService.playWinSound();
@@ -334,17 +343,27 @@ class GameProvider with ChangeNotifier {
   void playGameMusic() => _audioService.playGameMusic();
   void resumeMenuMusic() => _audioService.resumeMenuMusic();
 
+  // IMPORTANT: Do NOT call these from victory/game-over overlays if the
+  // internal handlers (_checkWinCondition, _handleLivesGameOver, _handleTimerGameOver)
+  // already ran — those already call addWin/addLoss. These methods exist only
+  // for screens that bypass the internal game loop entirely.
   void recordLevelComplete(
       {required int level, required int time, required int lives}) {
-    _stats.addWin();
-    _saveStats();
-    notifyListeners();
+    // Only count if not already counted by _checkWinCondition
+    if (!_isLevelWon) {
+      _stats.addWin();
+      _saveStats();
+      notifyListeners();
+    }
   }
 
   void recordLevelLoss() {
-    _stats.addLoss();
-    _saveStats();
-    notifyListeners();
+    // Only count if not already counted by _handleLivesGameOver/_handleTimerGameOver
+    if (!_isGameOver) {
+      _stats.addLoss();
+      _saveStats();
+      notifyListeners();
+    }
   }
 
   @override

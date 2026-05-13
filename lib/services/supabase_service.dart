@@ -8,6 +8,7 @@
 
 // Import the Supabase Flutter SDK — provides SupabaseClient, AuthResponse,
 // User, Session, OtpType, and all other Supabase types used below.
+import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 // Import the local GameStatsModel so this service can read/write game records.
@@ -242,20 +243,34 @@ class SupabaseService {
   static Future<void> saveGameStats(GameStatsModel stats) async {
     final user = _client.auth.currentUser;
     // Guard: do nothing if the user somehow isn't logged in
-    if (user == null) return;
+    if (user == null) {
+      debugPrint('[SupabaseService] saveGameStats: no current user, skipping.');
+      return;
+    }
 
-    // .upsert() calls POST /rest/v1/game_stats with Prefer: resolution=merge-duplicates
-    await _client.from('game_stats').upsert(
-      {
-        'user_id': user.id,
-        'total_wins': stats.totalWins,
-        'total_losses': stats.totalLosses,
-        'total_matches': stats.totalMatches,
-        'total_days': stats.totalDays,
-        'updated_at': DateTime.now().toIso8601String(), // ISO-8601 timestamp
-      },
-      onConflict: 'user_id', // Which column to check for an existing row
-    );
+    try {
+      // .upsert() with onConflict:'user_id' does:
+      //   INSERT if no row exists for this user_id → creates first-time row
+      //   UPDATE if a row already exists → updates in-place (never resets to 0)
+      // ignoreDuplicates: false is required to trigger the UPDATE path.
+      await _client.from('game_stats').upsert(
+        {
+          'user_id': user.id,
+          'total_wins': stats.totalWins,
+          'total_losses': stats.totalLosses,
+          'total_matches': stats.totalMatches,
+          'total_days': stats.totalDays,
+          'updated_at': DateTime.now().toIso8601String(),
+        },
+        onConflict: 'user_id',
+        ignoreDuplicates: false,
+      );
+      debugPrint(
+          '[SupabaseService] saveGameStats OK — wins:${stats.totalWins} losses:${stats.totalLosses} matches:${stats.totalMatches}');
+    } catch (e) {
+      debugPrint('[SupabaseService] saveGameStats ERROR: $e');
+      rethrow;
+    }
   }
 
   // ── fetchGameStats ────────────────────────────────────────────────────────
