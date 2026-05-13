@@ -40,6 +40,10 @@ class GameProvider with ChangeNotifier {
   bool _isLevelWon = false;
   bool get isLevelWon => _isLevelWon;
 
+  bool _statsLoading = false;
+  bool get statsLoading => _statsLoading;
+  Future<void>? _loadStatsFuture;
+
   GameStatsModel _stats = GameStatsModel();
   GameStatsModel get stats => _stats;
 
@@ -62,7 +66,20 @@ class GameProvider with ChangeNotifier {
     _setupAuthStateListener();
   }
 
-  Future<void> _loadStats() async {
+  Future<void> _loadStats({bool force = false}) async {
+    if (!force && _loadStatsFuture != null) {
+      return _loadStatsFuture!;
+    }
+
+    _loadStatsFuture = _doLoadStats();
+    try {
+      await _loadStatsFuture;
+    } finally {
+      _loadStatsFuture = null;
+    }
+  }
+
+  Future<void> _doLoadStats() async {
     // ── BUG FIX: Source-of-truth ordering ───────────────────────────────────
     // Old behaviour: SharedPreferences was read FIRST and displayed immediately.
     // On a shared device, the previous account's cached stats appeared in the
@@ -76,21 +93,20 @@ class GameProvider with ChangeNotifier {
     //   4. Supabase has NO row → keep 0s  (new user starts clean)
     //   5. Network fails entirely → fall back to local cache as last resort
 
-    // Step 1 — Start from zero; UI shows clean state while fetch is in flight
+    _statsLoading = true;
     _stats = GameStatsModel();
     notifyListeners();
 
-    // Step 2 — Supabase is the authoritative source for the logged-in user
     try {
       final remoteStats = await SupabaseService.fetchGameStats();
       if (remoteStats != null) {
         // Returning user — use their real cloud stats
         _stats = remoteStats;
-        await _saveLocalStats(); // Sync local cache to correct user data
+        await _saveLocalStats(); // Sync local cache to the correct user data
       }
       // New user — remoteStats is null (no DB row yet). Zeros remain. Correct.
     } catch (e) {
-      // Network unavailable — fall back to local cache as last resort
+      // Network unavailable — fall back to local cache as last resort.
       debugPrint('Error syncing stats from Supabase: $e');
       final prefs = await SharedPreferences.getInstance();
       _stats = GameStatsModel(
@@ -99,8 +115,10 @@ class GameProvider with ChangeNotifier {
         totalMatches: prefs.getInt(AppConstants.keyTotalMatches) ?? 0,
         totalDays: prefs.getInt(AppConstants.keyTotalDays) ?? 1,
       );
+    } finally {
+      _statsLoading = false;
+      notifyListeners();
     }
-    notifyListeners();
   }
 
   /// Sets up a listener for Supabase auth state changes.
@@ -135,6 +153,9 @@ class GameProvider with ChangeNotifier {
   }
 
   Future<void> _saveStats() async {
+    if (_statsLoading) {
+      await _loadStats();
+    }
     await _saveLocalStats();
     try {
       await SupabaseService.saveGameStats(_stats);
@@ -300,7 +321,7 @@ class GameProvider with ChangeNotifier {
   // Refreshes stats from Supabase (updates local cache too).
   Future<void> refreshStats() async {
     clearStats();
-    await _loadStats();
+    await _loadStats(force: true);
   }
 
   void nextLevel() {

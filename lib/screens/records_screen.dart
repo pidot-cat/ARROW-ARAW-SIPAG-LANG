@@ -38,6 +38,16 @@ class _RecordsScreenState extends State<RecordsScreen> {
         child: Consumer<GameProvider>(
           // Rebuild only this subtree when GameProvider notifies listeners
           builder: (context, gp, _) {
+            if (gp.statsLoading) {
+              return SizedBox(
+                width: size.width,
+                height: size.height,
+                child: const Center(
+                  child: CircularProgressIndicator(color: Colors.white),
+                ),
+              );
+            }
+
             final stats = gp.stats;
 
             // Calculate win rate as a percentage; guard against division by zero
