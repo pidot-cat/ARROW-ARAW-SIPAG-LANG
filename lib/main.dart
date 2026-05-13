@@ -1,20 +1,5 @@
 // lib/main.dart
 
-// Application entry point for Arrow Araw Sipag Lang.
-
-// Responsibilities:
-//   • Bootstraps the Supabase client before the widget tree is mounted.
-//   • Locks the device orientation to portrait mode.
-//   • Attaches the AudioService lifecycle observer so music stops when the app
-//     is backgrounded or closed.
-//   • Wraps the app in MultiProvider, registering GameProvider, AuthProvider,
-//     and ConnectivityProvider so all descendant widgets can access game,
-//     auth, and connectivity state.
-//   • Defines the global MaterialApp theme (dark background, white text,
-//     Roboto font) and the named route table.
-//   • Uses MaterialApp's [builder] to inject ConnectivityWrapper around every
-//     route automatically — no per-screen changes needed.
-
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'screens/splash_screen.dart';
@@ -50,7 +35,6 @@ void main() async {
     DeviceOrientation.portraitDown,
   ]);
 
-  // Attach lifecycle observer — hard-stops all audio on minimize/exit
   AudioService().attachLifecycleObserver();
 
   runApp(const ArrowArawSipagLang());
@@ -63,10 +47,17 @@ class ArrowArawSipagLang extends StatelessWidget {
   Widget build(BuildContext context) {
     return MultiProvider(
       providers: [
+        // FIX: GameProvider is created first (no dependency on AuthProvider).
         ChangeNotifierProvider(create: (_) => GameProvider()),
+
+        // FIX: AuthProvider now takes NO constructor arguments.
+        // The old ChangeNotifierProxyProvider that tried to inject GameProvider
+        // into AuthProvider via authProvider!.._gameProvider = gameProvider
+        // caused the "undefined_setter" compile error. Removed entirely.
+        // AuthProvider now handles stats refresh by calling GameProvider
+        // through the Supabase auth state stream inside GameProvider itself.
         ChangeNotifierProvider(create: (_) => AuthProvider()),
-        // ConnectivityProvider — monitors internet status app-wide.
-        // Registered here so every screen can read it via context.watch/read.
+
         ChangeNotifierProvider(create: (_) => ConnectivityProvider()),
       ],
       child: MaterialApp(
@@ -81,14 +72,6 @@ class ArrowArawSipagLang extends StatelessWidget {
             bodyMedium: TextStyle(color: Colors.white),
           ),
         ),
-        // ── ConnectivityWrapper injected globally via builder ──────────────
-        // MaterialApp.builder() wraps the entire Navigator/route stack.
-        // ConnectivityWrapper watches ConnectivityProvider and:
-        //   • Shows a persistent offline SnackBar on any screen.
-        //   • Shows a "back online" SnackBar when connection is restored.
-        //   • Renders a full-screen blocking overlay while offline so
-        //     buttons and inputs can't be interacted with.
-        // Using builder here means zero changes are needed in any screen file.
         builder: (context, child) => ConnectivityWrapper(
           child: child ?? const SizedBox.shrink(),
         ),

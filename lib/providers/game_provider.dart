@@ -1,10 +1,5 @@
 // lib/providers/game_provider.dart
 
-// PURPOSE:
-// Each level screen uses its own LevelStateMixin for independent timer
-// management.  GameProvider's timer is retained for backward-compatibility
-// with the single legacy GameScreen route.
-
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -50,15 +45,11 @@ class GameProvider with ChangeNotifier {
   Timer? _timer;
   final AudioService _audioService = AudioService();
 
-  // ════════════════════════════════════════════════════════════════════════════════
+  // ══════════════════════════════════════════════════════════════════════════
   // AUTH STATE LISTENER — Auto-refresh on account switch
-  // ════════════════════════════════════════════════════════════════════════════════
+  // ══════════════════════════════════════════════════════════════════════════
 
-  /// Listens to Supabase auth state changes to automatically refresh data
-  /// when users switch accounts on the same device.
   StreamSubscription<AuthState>? _authStateSubscription;
-
-  /// Tracks the current user ID to detect account switches.
   String? _lastKnownUserId;
 
   GameProvider() {
@@ -66,11 +57,14 @@ class GameProvider with ChangeNotifier {
     _setupAuthStateListener();
   }
 
+  // ══════════════════════════════════════════════════════════════════════════
+  // STATS LOADING — always fetches from Supabase first (source of truth)
+  // ══════════════════════════════════════════════════════════════════════════
+
   Future<void> _loadStats({bool force = false}) async {
     if (!force && _loadStatsFuture != null) {
       return _loadStatsFuture!;
     }
-
     _loadStatsFuture = _doLoadStats();
     try {
       await _loadStatsFuture;
@@ -80,34 +74,27 @@ class GameProvider with ChangeNotifier {
   }
 
   Future<void> _doLoadStats() async {
-    // ── BUG FIX: Source-of-truth ordering ───────────────────────────────────
-    // Old behaviour: SharedPreferences was read FIRST and displayed immediately.
-    // On a shared device, the previous account's cached stats appeared in the
-    // new account's Records screen — either briefly or permanently if Supabase
-    // had no row yet for the new user.
-    //
-    // New load order:
-    //   1. Show zeros immediately (safe default — never shows old account data)
-    //   2. Fetch from Supabase (source of truth for the logged-in user)
-    //   3. Supabase has a row  → use it   (returning user sees their real stats)
-    //   4. Supabase has NO row → keep 0s  (new user starts clean)
-    //   5. Network fails entirely → fall back to local cache as last resort
-
+    // FIX: Always start from zeros — never show a previous account's data.
     _statsLoading = true;
     _stats = GameStatsModel();
     notifyListeners();
 
     try {
+      // SOURCE OF TRUTH: fetch from Supabase using the current user's UID.
+      // SupabaseService.fetchGameStats() queries WHERE user_id = auth.uid(),
+      // so it is impossible to get another user's row.
       final remoteStats = await SupabaseService.fetchGameStats();
       if (remoteStats != null) {
-        // Returning user — use their real cloud stats
+        // Returning user — use their real cloud stats.
         _stats = remoteStats;
-        await _saveLocalStats(); // Sync local cache to the correct user data
+        await _saveLocalStats();
       }
       // New user — remoteStats is null (no DB row yet). Zeros remain. Correct.
     } catch (e) {
       // Network unavailable — fall back to local cache as last resort.
-      debugPrint('Error syncing stats from Supabase: $e');
+      // This cache was zeroed on login (_clearAllUserData in AuthProvider),
+      // so if the user just logged in, this returns 0s, not stale data.
+      debugPrint('[GameProvider] Error syncing stats from Supabase: $e');
       final prefs = await SharedPreferences.getInstance();
       _stats = GameStatsModel(
         totalWins: prefs.getInt(AppConstants.keyTotalWins) ?? 0,
@@ -121,29 +108,32 @@ class GameProvider with ChangeNotifier {
     }
   }
 
-  /// Sets up a listener for Supabase auth state changes.
-  /// Automatically refreshes game stats when users switch accounts.
-  void _setupAuthStateListener() {
-    // Cancel any existing subscription to prevent duplicates
-    _authStateSubscription?.cancel();
+  // ══════════════════════════════════════════════════════════════════════════
+  // AUTH STATE LISTENER
+  // ══════════════════════════════════════════════════════════════════════════
 
-    // Get the current user ID for comparison
+  void _setupAuthStateListener() {
+    _authStateSubscription?.cancel();
     _lastKnownUserId = SupabaseService.currentUser?.id;
 
-    // Listen to auth state changes
     _authStateSubscription =
         Supabase.instance.client.auth.onAuthStateChange.listen(
       (AuthState authState) {
         final currentUserId = authState.session?.user.id;
 
-        // Check if the user actually changed (not just token refresh)
         if (_lastKnownUserId != currentUserId) {
           debugPrint(
               '[GameProvider] User changed: $_lastKnownUserId → $currentUserId');
-
-          // User switched accounts or logged out → refresh all data
           _lastKnownUserId = currentUserId;
-          refreshStats();
+
+          if (currentUserId == null) {
+            // User logged out — clear stats immediately so the next
+            // account never sees stale data on the Records screen.
+            clearStats();
+          } else {
+            // New user logged in — fetch their stats from Supabase.
+            refreshStats();
+          }
         }
       },
       onError: (error) {
@@ -152,15 +142,23 @@ class GameProvider with ChangeNotifier {
     );
   }
 
+  // ══════════════════════════════════════════════════════════════════════════
+  // SAVE STATS — uses upsert so each user has exactly one row
+  // ══════════════════════════════════════════════════════════════════════════
+
   Future<void> _saveStats() async {
     if (_statsLoading) {
       await _loadStats();
     }
     await _saveLocalStats();
     try {
+      // FIX: SupabaseService.saveGameStats uses .upsert(onConflict: 'user_id')
+      // so if this user already has a row, it is UPDATED not duplicated.
+      // If they don't have a row yet, a new one is INSERTED.
+      // This is the core fix that prevents records from resetting on account switch.
       await SupabaseService.saveGameStats(_stats);
     } catch (e) {
-      debugPrint('Error saving stats to Supabase: $e');
+      debugPrint('[GameProvider] Error saving stats to Supabase: $e');
     }
   }
 
@@ -171,6 +169,10 @@ class GameProvider with ChangeNotifier {
     await prefs.setInt(AppConstants.keyTotalMatches, _stats.totalMatches);
     await prefs.setInt(AppConstants.keyTotalDays, _stats.totalDays);
   }
+
+  // ══════════════════════════════════════════════════════════════════════════
+  // GAME LOGIC
+  // ══════════════════════════════════════════════════════════════════════════
 
   void initLevel(int level) {
     _timer?.cancel();
@@ -183,9 +185,6 @@ class GameProvider with ChangeNotifier {
     notifyListeners();
   }
 
-  // ── FIX Bug 2: stopLevel — cancel timer cleanly before Navigator.pop ──────
-  /// Call this whenever the player navigates away from a level (back button,
-  /// quit dialog, etc.) to prevent the timer from firing lose-sound after pop.
   void stopLevel() {
     _timer?.cancel();
     _timer = null;
@@ -297,28 +296,29 @@ class GameProvider with ChangeNotifier {
     }
   }
 
-  /// Clears all stats locally and in Supabase. Called on account deletion.
-  /// Saves zeroed stats so any re-registration sees clean history.
+  // ══════════════════════════════════════════════════════════════════════════
+  // PUBLIC STAT HELPERS
+  // ══════════════════════════════════════════════════════════════════════════
+
   Future<void> resetStats() async {
     _stats = GameStatsModel();
     await _saveLocalStats();
-    // Also zero-out the remote record so re-registration starts fresh
     try {
       await SupabaseService.saveGameStats(_stats);
     } catch (e) {
-      debugPrint('resetStats remote error (non-fatal): $e');
+      debugPrint('[GameProvider] resetStats remote error (non-fatal): $e');
     }
     notifyListeners();
   }
 
-  // Clears the current in-memory stats immediately.
-  // Used when the authenticated user changes to prevent stale UI values.
+  /// Clears in-memory stats to zeros immediately.
+  /// Called when the user logs out so Records screen shows 0s, not stale data.
   void clearStats() {
     _stats = GameStatsModel();
     notifyListeners();
   }
 
-  // Refreshes stats from Supabase (updates local cache too).
+  /// Clears stats then fetches fresh data from Supabase for the current user.
   Future<void> refreshStats() async {
     clearStats();
     await _loadStats(force: true);
@@ -341,7 +341,6 @@ class GameProvider with ChangeNotifier {
     notifyListeners();
   }
 
-  /// Called from BentLevelStateMixin.triggerGameOver to record a loss.
   void recordLevelLoss() {
     _stats.addLoss();
     _saveStats();

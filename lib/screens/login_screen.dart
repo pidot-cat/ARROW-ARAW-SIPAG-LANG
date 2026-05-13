@@ -7,8 +7,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/auth_provider.dart';
-import '../providers/game_provider.dart';
-import '../services/level_unlock_service.dart';
 import '../widgets/background_wrapper.dart';
 import '../widgets/gradient_button.dart';
 import '../widgets/gradient_input_field.dart';
@@ -69,11 +67,6 @@ class _LoginScreenState extends State<LoginScreen> {
     setState(() => _isLoading = false);
 
     if (result == null) {
-      if (mounted) {
-        context.read<GameProvider>().refreshStats();
-        await LevelUnlockService.instance.resetProgress();
-      }
-      if (!mounted) return;
       // null = success → go to home
       Navigator.pushReplacementNamed(context, '/home');
     } else if (result == 'EMAIL_NOT_CONFIRMED') {

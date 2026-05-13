@@ -1,8 +1,5 @@
 // lib/screens/records_screen.dart
 
-// Displays the player's cumulative statistics (wins, losses, win-rate, days
-// played) loaded from Supabase via [SupabaseService.getGameStats()].
-
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -20,9 +17,8 @@ class _RecordsScreenState extends State<RecordsScreen> {
   @override
   void initState() {
     super.initState();
-    // Refresh stats from Supabase on screen open.
-    // addPostFrameCallback ensures the context is fully mounted before
-    // reading the provider — avoids calling read() during the build phase.
+    // Refresh stats from Supabase every time this screen opens.
+    // This guarantees the correct user's data is shown after an account switch.
     WidgetsBinding.instance.addPostFrameCallback((_) {
       context.read<GameProvider>().refreshStats();
     });
@@ -36,7 +32,6 @@ class _RecordsScreenState extends State<RecordsScreen> {
       body: BackgroundWrapper(
         showBackButton: true,
         child: Consumer<GameProvider>(
-          // Rebuild only this subtree when GameProvider notifies listeners
           builder: (context, gp, _) {
             if (gp.statsLoading) {
               return SizedBox(
@@ -50,7 +45,6 @@ class _RecordsScreenState extends State<RecordsScreen> {
 
             final stats = gp.stats;
 
-            // Calculate win rate as a percentage; guard against division by zero
             final winRate = stats.totalMatches > 0
                 ? (stats.totalWins / stats.totalMatches * 100)
                 : 0.0;
@@ -65,29 +59,31 @@ class _RecordsScreenState extends State<RecordsScreen> {
                   children: [
                     SizedBox(height: size.height * 0.05),
 
-                    // ── Logo ──────────────────────────────────────────────────
                     Image.asset(AppConstants.logoWithBg,
                         width: 110, height: 110),
                     const SizedBox(height: 8),
 
-                    // ── Title ─────────────────────────────────────────────────
                     const Text(
                       'Records',
                       style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 24,
-                          fontWeight: FontWeight.bold,
-                          letterSpacing: 1.2),
+                        color: Colors.white,
+                        fontSize: 24,
+                        fontWeight: FontWeight.bold,
+                        letterSpacing: 1.2,
+                      ),
                     ),
                     SizedBox(height: size.height * 0.03),
 
-                    // ── 2-column grid for the first 4 metrics ─────────────────
+                    // ── 2-column stat grid ──────────────────────────────────
+                    // FIX: childAspectRatio lowered from 1.8 to 1.1 so cards
+                    // are tall enough to show the number without clipping.
+                    // FittedBox inside each card also scales the number down
+                    // automatically on smaller screens.
                     GridView.count(
                       crossAxisCount: 2,
                       crossAxisSpacing: 14,
                       mainAxisSpacing: 14,
-                      childAspectRatio:
-                          1.5, // Increased from 1.35 to provide more vertical space
+                      childAspectRatio: 1.1,
                       shrinkWrap: true,
                       physics: const NeverScrollableScrollPhysics(),
                       children: [
@@ -124,7 +120,6 @@ class _RecordsScreenState extends State<RecordsScreen> {
 
                     const SizedBox(height: 14),
 
-                    // ── Win Rate — full-width card with progress bar ───────────
                     _winRateCard(
                       winRate: winRate,
                       winRateFraction: winRateFraction,
@@ -141,13 +136,6 @@ class _RecordsScreenState extends State<RecordsScreen> {
     );
   }
 
-  /// Glassmorphism metric card used in the 2-column grid.
-  ///
-  /// [label]       — Metric name shown in bold white (e.g. "Wins").
-  /// [subLabel]    — Muted grey sub-label under the title (e.g. "Stats").
-  /// [value]       — Numeric value displayed in large bold white text.
-  /// [icon]        — Material icon inside the coloured icon container.
-  /// [iconBgColor] — Solid background colour for the icon container.
   Widget _glassCard({
     required String label,
     required String subLabel,
@@ -185,7 +173,7 @@ class _RecordsScreenState extends State<RecordsScreen> {
           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            mainAxisAlignment: MainAxisAlignment.start,
             children: [
               // Icon container (top-left)
               Container(
@@ -196,6 +184,8 @@ class _RecordsScreenState extends State<RecordsScreen> {
                 ),
                 child: Icon(icon, color: Colors.white, size: 20),
               ),
+
+              const Spacer(),
 
               // Label + sub-label + value
               Column(
@@ -218,16 +208,23 @@ class _RecordsScreenState extends State<RecordsScreen> {
                       fontWeight: FontWeight.w400,
                     ),
                   ),
-                  const SizedBox(height: 2),
-                  FittedBox(
-                    fit: BoxFit.scaleDown,
-                    child: Text(
-                      value,
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 26,
-                        fontWeight: FontWeight.bold,
-                        height: 1.1,
+                  const SizedBox(height: 4),
+
+                  // FIX: FittedBox wraps the number so it scales down to fit
+                  // the card width instead of overflowing or being clipped.
+                  SizedBox(
+                    width: double.infinity,
+                    child: FittedBox(
+                      fit: BoxFit.scaleDown,
+                      alignment: Alignment.centerLeft,
+                      child: Text(
+                        value,
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 36,
+                          fontWeight: FontWeight.bold,
+                          height: 1.1,
+                        ),
                       ),
                     ),
                   ),
@@ -240,16 +237,12 @@ class _RecordsScreenState extends State<RecordsScreen> {
     );
   }
 
-  /// Full-width Win Rate card with glassmorphism styling and a progress bar.
-  ///
-  /// [winRate]         — Percentage value as a double (e.g. 25.0).
-  /// [winRateFraction] — Progress fraction 0.0–1.0 for the LinearProgressIndicator.
   Widget _winRateCard({
     required double winRate,
     required double winRateFraction,
   }) {
-    const Color barColor = Color(0xFF3D5AFE); // indigo accent
-    const Color iconBg = Color(0xFF1A237E); // deep indigo container
+    const Color barColor = Color(0xFF3D5AFE);
+    const Color iconBg = Color(0xFF1A237E);
 
     return ClipRRect(
       borderRadius: BorderRadius.circular(18),
@@ -283,10 +276,8 @@ class _RecordsScreenState extends State<RecordsScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Top row: icon + label/sub-label + value
               Row(
                 children: [
-                  // Icon container
                   Container(
                     padding: const EdgeInsets.all(8),
                     decoration: BoxDecoration(
@@ -303,8 +294,6 @@ class _RecordsScreenState extends State<RecordsScreen> {
                     ),
                   ),
                   const SizedBox(width: 12),
-
-                  // Label + sub-label
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -327,8 +316,6 @@ class _RecordsScreenState extends State<RecordsScreen> {
                       ],
                     ),
                   ),
-
-                  // Value — win rate percentage
                   Text(
                     '${winRate.toStringAsFixed(1)}%',
                     style: const TextStyle(
@@ -339,10 +326,7 @@ class _RecordsScreenState extends State<RecordsScreen> {
                   ),
                 ],
               ),
-
               const SizedBox(height: 12),
-
-              // Progress bar track
               ClipRRect(
                 borderRadius: BorderRadius.circular(6),
                 child: LinearProgressIndicator(
