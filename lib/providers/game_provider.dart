@@ -1,8 +1,9 @@
 // lib/providers/game_provider.dart
 
-// ChangeNotifier that manages core game state for the legacy GameScreen.
-// Tracks [currentLevel], the list of active [ArrowModel] objects, the grid
-// size, remaining [lives], and the round timer.
+// PURPOSE:
+// Each level screen uses its own LevelStateMixin for independent timer
+// management.  GameProvider's timer is retained for backward-compatibility
+// with the single legacy GameScreen route.
 
 import 'dart:async';
 import 'package:flutter/material.dart';
@@ -49,24 +50,44 @@ class GameProvider with ChangeNotifier {
   }
 
   Future<void> _loadStats() async {
-    final prefs = await SharedPreferences.getInstance();
-    _stats = GameStatsModel(
-      totalWins: prefs.getInt(AppConstants.keyTotalWins) ?? 0,
-      totalLosses: prefs.getInt(AppConstants.keyTotalLosses) ?? 0,
-      totalMatches: prefs.getInt(AppConstants.keyTotalMatches) ?? 0,
-      totalDays: prefs.getInt(AppConstants.keyTotalDays) ?? 1,
-    );
+    // ── BUG FIX: Source-of-truth ordering ───────────────────────────────────
+    // Old behaviour: SharedPreferences was read FIRST and displayed immediately.
+    // On a shared device, the previous account's cached stats appeared in the
+    // new account's Records screen — either briefly or permanently if Supabase
+    // had no row yet for the new user.
+    //
+    // New load order:
+    //   1. Show zeros immediately (safe default — never shows old account data)
+    //   2. Fetch from Supabase (source of truth for the logged-in user)
+    //   3. Supabase has a row  → use it   (returning user sees their real stats)
+    //   4. Supabase has NO row → keep 0s  (new user starts clean)
+    //   5. Network fails entirely → fall back to local cache as last resort
+
+    // Step 1 — Start from zero; UI shows clean state while fetch is in flight
+    _stats = GameStatsModel();
     notifyListeners();
+
+    // Step 2 — Supabase is the authoritative source for the logged-in user
     try {
       final remoteStats = await SupabaseService.fetchGameStats();
       if (remoteStats != null) {
+        // Returning user — use their real cloud stats
         _stats = remoteStats;
-        await _saveLocalStats();
-        notifyListeners();
+        await _saveLocalStats(); // Sync local cache to correct user data
       }
+      // New user — remoteStats is null (no DB row yet). Zeros remain. Correct.
     } catch (e) {
+      // Network unavailable — fall back to local cache as last resort
       debugPrint('Error syncing stats from Supabase: $e');
+      final prefs = await SharedPreferences.getInstance();
+      _stats = GameStatsModel(
+        totalWins:    prefs.getInt(AppConstants.keyTotalWins)    ?? 0,
+        totalLosses:  prefs.getInt(AppConstants.keyTotalLosses)  ?? 0,
+        totalMatches: prefs.getInt(AppConstants.keyTotalMatches) ?? 0,
+        totalDays:    prefs.getInt(AppConstants.keyTotalDays)    ?? 1,
+      );
     }
+    notifyListeners();
   }
 
   Future<void> _saveStats() async {
@@ -97,6 +118,9 @@ class GameProvider with ChangeNotifier {
     notifyListeners();
   }
 
+  // ── FIX Bug 2: stopLevel — cancel timer cleanly before Navigator.pop ──────
+  /// Call this whenever the player navigates away from a level (back button,
+  /// quit dialog, etc.) to prevent the timer from firing lose-sound after pop.
   void stopLevel() {
     _timer?.cancel();
     _timer = null;

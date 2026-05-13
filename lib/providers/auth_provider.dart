@@ -33,6 +33,7 @@ import '../services/level_unlock_service.dart';
 /// Widgets listen to this provider to know if the user is logged in,
 /// who they are, and whether the boot-time auth check has completed.
 class AuthProvider with ChangeNotifier {
+
   // ══════════════════════════════════════════════════════════════════════════
   // PUBLIC STATE FIELDS
   // ══════════════════════════════════════════════════════════════════════════
@@ -51,9 +52,9 @@ class AuthProvider with ChangeNotifier {
   bool _isReady = false;
 
   // Public getters — expose private state as read-only to the outside world.
-  String get username => _username;
-  bool get isLoggedIn => _isLoggedIn;
-  bool get isReady => _isReady;
+  String get username   => _username;
+  bool   get isLoggedIn => _isLoggedIn;
+  bool   get isReady    => _isReady;
 
   // ══════════════════════════════════════════════════════════════════════════
   // CONSTRUCTOR
@@ -138,7 +139,8 @@ class AuthProvider with ChangeNotifier {
   ///   real error. Now it returns e.toString() so the actual Supabase message
   ///   ("Error sending confirmation email") appears on screen. This told us
   ///   the problem was the Supabase SMTP config, not the Dart code.
-  Future<String?> signUp(String email, String password, String username) async {
+  Future<String?> signUp(
+      String email, String password, String username) async {
     try {
       // ── Client-side validation ─────────────────────────────────────────────
       // These checks run locally — no network request needed.
@@ -159,7 +161,7 @@ class AuthProvider with ChangeNotifier {
       // the fix — without emailRedirectTo, Supabase uses the wrong email
       // template and can fail with "unexpected_failure".
       final response = await SupabaseService.signUp(
-        email: email,
+        email:    email,
         password: password,
         username: username,
       );
@@ -194,13 +196,29 @@ class AuthProvider with ChangeNotifier {
       // This can happen if Auth is disabled in the project settings.
       return 'Sign up failed — no user returned. '
           'Check your Supabase project settings.';
+
     } on AuthException catch (e) {
       // AuthException is thrown by the Supabase SDK for known auth errors,
       // e.g. "User already registered", "Password too short", etc.
       // e.message is a human-readable string we can show directly.
       debugPrint('[AuthProvider] signUp AuthException: ${e.message}');
       return e.message;
+
     } catch (e, stack) {
+      // KEY FIX — this catch block previously returned a hardcoded
+      // 'Unexpected Failure' string, hiding the real error from the developer.
+      //
+      // Now it:
+      //   1. Prints the full error and stack trace to the debug console
+      //      so you can see it in Android Studio / VS Code output.
+      //   2. Returns the actual error text so it appears in the UI SnackBar.
+      //
+      // Common causes of errors landing here:
+      //   • "Error sending confirmation email" → Supabase SMTP not configured
+      //     → FIX: Disable "Confirm email" in Dashboard, or add custom SMTP
+      //   • SocketException → No internet connection on the device
+      //   • Invalid URL / anon key → Wrong values in main.dart Supabase.initialize()
+      //   • Project paused → Free-tier Supabase projects pause after 1 week idle
       debugPrint('[AuthProvider] signUp unexpected error: $e');
       debugPrint(stack.toString());
 
@@ -229,7 +247,7 @@ class AuthProvider with ChangeNotifier {
       final response = await SupabaseService.verifyOtp(
         email: email,
         token: token,
-        type: OtpType.signup, // CRITICAL: must match the OTP type that was sent
+        type:  OtpType.signup, // CRITICAL: must match the OTP type that was sent
       );
 
       if (response.user != null && response.session != null) {
@@ -240,6 +258,7 @@ class AuthProvider with ChangeNotifier {
 
       // Missing user or session after verifyOTP — code was wrong or expired.
       return 'Invalid or expired code. Please try again.';
+
     } on AuthException catch (e) {
       // Common AuthExceptions here:
       //   "Token has expired or is invalid" — code is wrong or >10 minutes old
@@ -371,7 +390,7 @@ class AuthProvider with ChangeNotifier {
       final response = await SupabaseService.verifyOtp(
         email: email,
         token: token,
-        type: OtpType.recovery, // Different from OtpType.signup on purpose
+        type:  OtpType.recovery, // Different from OtpType.signup on purpose
       );
       // Both must be present: user confirms identity, session grants update access
       return (response.user != null && response.session != null)
@@ -425,7 +444,7 @@ class AuthProvider with ChangeNotifier {
       await prefs.setBool(AppConstants.keyIsLoggedIn, false);
 
       // Reset in-memory state.
-      _username = '';
+      _username   = '';
       _isLoggedIn = false;
 
       // Tell all listening widgets to rebuild (e.g. HomeScreen, SplashScreen).
@@ -466,7 +485,7 @@ class AuthProvider with ChangeNotifier {
       final prefs = await SharedPreferences.getInstance();
       await prefs.remove(AppConstants.keyUsername);
       await prefs.setBool(AppConstants.keyIsLoggedIn, false);
-      _username = '';
+      _username   = '';
       _isLoggedIn = false;
       notifyListeners();
       return null; // null = success
@@ -492,16 +511,37 @@ class AuthProvider with ChangeNotifier {
   /// will then query Supabase for THIS user's real progress — guaranteeing that
   /// no data bleeds over from a previously logged-in tester account.
   Future<void> _handleLoginSuccess(User user, String username) async {
-    // Clear the local level-unlock cache so this user's Supabase row is
-    // authoritative (prevents inheriting progress from the previous session).
+    // ── BUG FIX: Account Isolation ─────────────────────────────────────────
+    // Previous bug: When a new account logged in on the same device, the old
+    // account's game stats (wins, losses, matches, days) remained in
+    // SharedPreferences. GameProvider._loadStats() would read these stale
+    // values immediately on startup — before Supabase could return the real
+    // stats for the new account — making it appear as if the new account
+    // inherited the old account's records.
+    //
+    // Fix: On every successful login/signup, zero-out ALL stat keys in
+    // SharedPreferences BEFORE GameProvider gets a chance to read them.
+    // GameProvider._loadStats() then starts from zero locally, and the
+    // subsequent Supabase fetch either:
+    //   a) Returns 0s for a brand-new account → correct empty records screen
+    //   b) Returns the real stats for a returning account → correct records
+
+    // Step 1 — Reset level progress cache (existing behavior, kept)
     await LevelUnlockService.instance.resetProgress();
 
+    // Step 2 — Zero-out the game stats cache so old account data is gone
     final prefs = await SharedPreferences.getInstance();
-    _username = username;
+    await prefs.setInt(AppConstants.keyTotalWins,    0);
+    await prefs.setInt(AppConstants.keyTotalLosses,  0);
+    await prefs.setInt(AppConstants.keyTotalMatches, 0);
+    await prefs.setInt(AppConstants.keyTotalDays,    1); // 1 = first day
+
+    // Step 3 — Persist the new user's identity
+    _username   = username;
     _isLoggedIn = true;
-    // Persist to disk so the user stays logged in across app restarts.
-    await prefs.setString(AppConstants.keyUsername, _username);
-    await prefs.setBool(AppConstants.keyIsLoggedIn, true);
+    await prefs.setString(AppConstants.keyUsername,   _username);
+    await prefs.setBool(AppConstants.keyIsLoggedIn,   true);
+
     // Rebuild all widgets that depend on isLoggedIn or username.
     notifyListeners();
   }
